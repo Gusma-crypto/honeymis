@@ -40,7 +40,7 @@ RUN composer install \
         --prefer-dist \
         --optimize-autoloader \
     && npm ci \
-    && npm run build \
+    && APP_KEY="$(php -r 'echo "base64:".base64_encode(random_bytes(32));')" npm run build \
     && rm -rf node_modules
 
 FROM php-base AS app
