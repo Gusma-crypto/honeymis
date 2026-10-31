@@ -1,5 +1,14 @@
 import { Link, router } from '@inertiajs/react';
-import { Eye, Pencil, Plus, Rows3, Search } from 'lucide-react';
+import {
+    CircleCheck,
+    Clock3,
+    CircleX,
+    Eye,
+    Pencil,
+    Plus,
+    Rows3,
+    Search,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Key, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
@@ -318,10 +327,28 @@ export function StatusBadge({ status }: { status: string }) {
         verified: 'Terverifikasi',
         processed: 'Diproses',
     };
+    const Icon = positive.includes(status)
+        ? CircleCheck
+        : negative.includes(status)
+          ? CircleX
+          : Clock3;
+    const color =
+        status === 'completed'
+            ? 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-200'
+            : ['processing', 'submitted', 'approved', 'reserved'].includes(
+                    status,
+                )
+              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200'
+              : positive.includes(status)
+                ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+                : negative.includes(status)
+                  ? 'bg-rose-50 text-rose-800 dark:bg-rose-950 dark:text-rose-200'
+                  : 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200';
     return (
         <span
-            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${positive.includes(status) ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : negative.includes(status) ? 'bg-rose-50 text-rose-800 dark:bg-rose-950 dark:text-rose-200' : 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200'}`}
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${color}`}
         >
+            <Icon className="size-3" aria-hidden="true" />
             {labels[status] ?? status}
         </span>
     );

@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardSummary
 {
+    public function __construct(private AdminDashboardDetails $details) {}
+
     private const CACHE_SECONDS = 15;
 
     private const ADMIN_PERMISSIONS = [
@@ -54,7 +56,7 @@ class DashboardSummary
             $summary['finance'] = Cache::remember('dashboard.finance.v1.'.$month->format('Y-m-d'), self::CACHE_SECONDS, $this->finance(...));
         }
 
-        return $summary;
+        return [...$summary, ...$this->details->forUser($user)];
     }
 
     /** @return array<string, mixed> */
@@ -62,10 +64,11 @@ class DashboardSummary
     {
         $counts = Order::selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status')
             ->map(fn ($total): int => (int) $total)->all();
-        $recent = Order::orderByDesc('id')->limit(6)->get(['id', 'order_number', 'status', 'grand_total', 'placed_at'])
+        $recent = Order::with(['customer:id,name', 'items:id,order_id,name_snapshot'])->orderByDesc('id')->limit(6)->get(['id', 'customer_id', 'order_number', 'status', 'grand_total', 'placed_at'])
             ->map(fn (Order $order): array => [
                 'id' => $order->id, 'number' => $order->order_number, 'status' => $order->status,
                 'total' => $order->grand_total, 'placedAt' => $order->placed_at->toIso8601String(),
+                'customer' => $order->customer->name, 'product' => $order->items->first()->name_snapshot ?? '—',
             ])->all();
 
         return ['counts' => $counts, 'reviewPayments' => Payment::where('status', 'submitted')->count(), 'recent' => $recent];

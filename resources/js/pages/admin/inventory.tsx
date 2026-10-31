@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { Boxes as MenuIcon } from 'lucide-react';
 import { ListFilters } from '@/components/list-filters';
 import { confirmAction } from '@/lib/sweet-alert';
 import {
@@ -104,7 +106,9 @@ export default function Inventory({
             <Head title="Persediaan" />
             <main className="grid gap-5 p-4 sm:p-6">
                 <header>
-                    <h1 className="text-2xl font-semibold">Persediaan</h1>
+                    <MenuTitle icon={MenuIcon} tone="green">
+                        Persediaan
+                    </MenuTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
                         Periksa stok fisik, reservasi, dan ketersediaan per
                         varian.

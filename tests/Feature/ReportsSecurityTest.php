@@ -37,7 +37,7 @@ class ReportsSecurityTest extends FinanceTestCase
         $this->financeActors();
         $order = $this->commissionOrder();
         $order->update(['order_number' => '=HYPERLINK(1)']);
-        $response = $this->actingAs($this->finance)->withSession(['auth.password_confirmed_at' => now()->getTimestamp()])->get(route('admin.reports.export', ['type' => 'orders', 'from' => now()->subDay()->format('Y-m-d'), 'until' => now()->format('Y-m-d')]));
+        $response = $this->actingAs($this->finance)->withSession(['auth.password_confirmed_at' => now()->getTimestamp()])->get(route('admin.reports.export', ['type' => 'orders', 'from' => now('Asia/Jakarta')->subDay()->format('Y-m-d'), 'until' => now('Asia/Jakarta')->format('Y-m-d')]));
         $response->assertOk();
         $this->assertStringContainsString("'=HYPERLINK(1)", $response->streamedContent());
     }

@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { Coins as MenuIcon } from 'lucide-react';
 import { ListFilters } from '@/components/list-filters';
 import { confirmAction } from '@/lib/sweet-alert';
 import {
@@ -23,13 +25,18 @@ type Rule = {
     version: number;
     status: string;
     rate_bps: number;
-    fixed_amount: number;
     cap_amount: number;
     valid_from: string;
     preview: {
         checked: number;
         violations: number;
-        examples: { sku: string; base: number; commission: number }[];
+        examples: {
+            sku: string;
+            base: number;
+            commission: number;
+            network: number;
+            margin: number;
+        }[];
     } | null;
 };
 function RuleCard({ rule: r }: { rule: Rule }) {
@@ -40,7 +47,7 @@ function RuleCard({ rule: r }: { rule: Rule }) {
                 Versi {r.version} &middot; {r.status}
             </h2>
             <p>
-                {r.rate_bps / 100}% atau {money(r.fixed_amount)} &middot; Plafon{' '}
+                {r.rate_bps / 100}% dari harga eligible &middot; Plafon{' '}
                 {money(r.cap_amount)}
             </p>
             <p>Mulai {new Date(r.valid_from).toLocaleString('id-ID')}</p>
@@ -64,6 +71,14 @@ function RuleCard({ rule: r }: { rule: Rule }) {
                                 header: 'Komisi direct',
                                 render: (e) => money(e.commission),
                             },
+                            {
+                                header: 'Komisi jaringan (maks.)',
+                                render: (e) => money(e.network),
+                            },
+                            {
+                                header: 'Margin produk',
+                                render: (e) => money(e.margin),
+                            },
                         ]}
                     />
                     <label className="flex gap-3">
@@ -74,8 +89,7 @@ function RuleCard({ rule: r }: { rule: Rule }) {
                                 f.setData('acknowledge_terms', e.target.checked)
                             }
                         />
-                        Saya menyetujui tarif dan simulasi penjualan direct satu
-                        level ini.
+                        Saya menyetujui tarif direct dan simulasi margin MLM.
                     </label>
                     <Button
                         disabled={
@@ -87,7 +101,7 @@ function RuleCard({ rule: r }: { rule: Rule }) {
                             if (
                                 await confirmAction(
                                     'Publikasikan aturan komisi?',
-                                    `Versi ${r.version} akan digunakan untuk transaksi eligible berikutnya. Hanya komisi direct satu level.`,
+                                    `Versi ${r.version} akan digunakan untuk transaksi eligible berikutnya. Komisi jaringan mengikuti konfigurasi Program MLM.`,
                                 )
                             )
                                 f.post(publish.url(r.id));
@@ -122,13 +136,11 @@ function RuleCard({ rule: r }: { rule: Rule }) {
 export default function Rules({
     rules,
     nextVersion,
-    budgetBps,
     products,
     categories,
 }: {
     rules: Paginated<Rule>;
     nextVersion: number;
-    budgetBps: number;
     products: { id: number; name: string }[];
     categories: { id: number; name: string }[];
 }) {
@@ -136,7 +148,7 @@ export default function Rules({
         version: nextVersion,
         product_id: '',
         category_id: '',
-        rate_bps: 0,
+        rate_bps: 1500,
         fixed_amount: 0,
         cap_amount: 0,
         valid_from: '',
@@ -146,11 +158,13 @@ export default function Rules({
         <>
             <Head title="Aturan komisi" />
             <main className="grid gap-6 p-6">
-                <h1 className="text-3xl font-bold">Aturan komisi direct</h1>
+                <MenuTitle icon={MenuIcon} tone="amber">
+                    Aturan komisi penjualan direct
+                </MenuTitle>
                 <p>
-                    Budget maksimal {budgetBps / 100}%. Aturan dipublikasikan
-                    setelah simulasi dan berlaku untuk checkout berikutnya.
-                    Snapshot order lama tetap.
+                    Tarif direct harus 15–20%; total direct dan jaringan tetap
+                    dibatasi margin produk. Tarif generasi dan target rank
+                    diatur di Program MLM. Snapshot order lama tetap.
                 </p>
                 <RecordDialog
                     kind="add"
@@ -169,38 +183,38 @@ export default function Rules({
                             });
                         }}
                     >
-                        {(
-                            [
-                                'version',
-                                'rate_bps',
-                                'fixed_amount',
-                                'cap_amount',
-                            ] as const
-                        ).map((k, i) => (
-                            <Field
-                                key={k}
-                                label={
-                                    [
-                                        'Versi',
-                                        'Tarif basis point (100 bps = 1%)',
-                                        'Nominal tetap IDR (pilih salah satu tarif)',
-                                        'Plafon per item IDR',
-                                    ][i]
-                                }
-                            >
-                                <input
-                                    type="number"
-                                    step="1"
-                                    min="0"
-                                    className={inputClass}
-                                    required
-                                    value={form.data[k]}
-                                    onChange={(e) =>
-                                        form.setData(k, Number(e.target.value))
+                        {(['version', 'rate_bps', 'cap_amount'] as const).map(
+                            (k, i) => (
+                                <Field
+                                    key={k}
+                                    label={
+                                        [
+                                            'Versi',
+                                            'Tarif direct basis point (1.500–2.000 = 15–20%)',
+                                            'Plafon per item IDR',
+                                        ][i]
                                     }
-                                />
-                            </Field>
-                        ))}
+                                >
+                                    <input
+                                        type="number"
+                                        max={
+                                            k === 'rate_bps' ? 2000 : undefined
+                                        }
+                                        min={k === 'rate_bps' ? 1500 : 0}
+                                        step="1"
+                                        className={inputClass}
+                                        required
+                                        value={form.data[k]}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                k,
+                                                Number(e.target.value),
+                                            )
+                                        }
+                                    />
+                                </Field>
+                            ),
+                        )}
                         {(['product_id', 'category_id'] as const).map(
                             (k, i) => (
                                 <Field
@@ -277,10 +291,7 @@ export default function Rules({
                         },
                         {
                             header: 'Tarif',
-                            render: (r) =>
-                                r.rate_bps > 0
-                                    ? `${r.rate_bps / 100}%`
-                                    : money(r.fixed_amount),
+                            render: (r) => `${r.rate_bps / 100}%`,
                         },
                         {
                             header: 'Plafon',
@@ -307,9 +318,7 @@ export default function Rules({
                                                 ['Versi', r.version],
                                                 [
                                                     'Tarif',
-                                                    r.rate_bps > 0
-                                                        ? `${r.rate_bps / 100}%`
-                                                        : money(r.fixed_amount),
+                                                    `${r.rate_bps / 100}%`,
                                                 ],
                                                 ['Plafon', money(r.cap_amount)],
                                                 [

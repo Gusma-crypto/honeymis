@@ -22,7 +22,7 @@ class MvpJourneyTest extends FinanceTestCase
         $this->artisan('honey:process-finance')->assertSuccessful();
         $this->assertSame($notifications, Notification::sent(User::findOrFail($order->customer->user_id), CommerceUpdate::class)->count());
         $this->assertSame($balance, app(PartnerLedger::class)->balances($this->partner->id));
-        $this->assertDatabaseCount('commission_entries', 1);
+        $this->assertDatabaseCount('commission_entries', 2);
         $this->artisan('honey:reconcile-finance')->assertSuccessful();
     }
 }

@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { RotateCcw as MenuIcon } from 'lucide-react';
 import { ListFilters } from '@/components/list-filters';
 import { confirmAction } from '@/lib/sweet-alert';
 import {
@@ -95,9 +97,9 @@ export default function Refunds({ refunds }: { refunds: Paginated<Refund> }) {
             <Head title="Permintaan refund" />
             <main className="grid gap-5 p-4 sm:p-6">
                 <header>
-                    <h1 className="text-2xl font-semibold">
+                    <MenuTitle icon={MenuIcon} tone="coral">
                         Permintaan refund
-                    </h1>
+                    </MenuTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
                         Permintaan diajukan pada detail pesanan, kemudian
                         ditinjau Finance.

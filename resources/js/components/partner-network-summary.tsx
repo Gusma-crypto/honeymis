@@ -47,7 +47,8 @@ export function PartnerNetworkSummary({ data }: { data: PartnerNetworkData }) {
                         ? 'Ringkasan seluruh struktur sponsor. Level 1 adalah mitra tanpa sponsor.'
                         : 'Level 1 adalah mitra langsung di bawah Anda; level berikutnya adalah jaringan di bawah mereka.'}{' '}
                     Jumlah kaki berarti cabang sponsor langsung, bukan skema
-                    binary. Komisi tetap direct satu level.
+                    binary. Komisi jaringan dibatasi maksimal lima generasi dan
+                    dihitung dari penjualan produk yang valid.
                 </p>
             </header>
             <PartnerHierarchy data={data} />

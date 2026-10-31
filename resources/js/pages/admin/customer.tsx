@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { ContactRound as MenuIcon } from 'lucide-react';
 import { CustomerEditor } from '@/components/customer-editor';
 import {
     DataTable,
@@ -27,7 +29,9 @@ export default function Customer({
             <Head title={customer.name} />
             <main className="grid gap-5 p-4 sm:p-6">
                 <header className="flex flex-wrap items-center justify-between gap-3">
-                    <h1 className="text-2xl font-semibold">Detail pelanggan</h1>
+                    <MenuTitle icon={MenuIcon} tone="violet">
+                        Detail pelanggan
+                    </MenuTitle>
                     <RecordDialog kind="edit" title="Edit kontak pelanggan">
                         <CustomerEditor customer={customer} />
                     </RecordDialog>

@@ -7,6 +7,7 @@ import {
     ClipboardList,
     Coins,
     LayoutDashboard,
+    Network,
     Package,
     Settings2,
     ShieldCheck,
@@ -32,6 +33,7 @@ import { commerceSettings } from '@/routes/admin';
 import { index as audit } from '@/routes/admin/audit';
 import { index as products } from '@/routes/admin/catalog';
 import { index as rules } from '@/routes/admin/commission-rules';
+import { index as mlmSettings } from '@/routes/admin/mlm-settings';
 import { index as customers } from '@/routes/admin/customers';
 import { index as inventory } from '@/routes/admin/inventory';
 import { index as orders } from '@/routes/admin/orders';
@@ -91,6 +93,12 @@ export function AppSidebar() {
         operational.push({ title: 'Mitra', href: partners(), icon: Users });
     if (can('commission-rules.manage'))
         finance.push({ title: 'Aturan komisi', href: rules(), icon: Coins });
+    if (can('commission-rules.manage'))
+        finance.push({
+            title: 'Program MLM',
+            href: mlmSettings(),
+            icon: Network,
+        });
     if (can('payouts.review'))
         finance.push({ title: 'Payout mitra', href: payouts(), icon: Wallet });
     if (can('refunds.manage'))

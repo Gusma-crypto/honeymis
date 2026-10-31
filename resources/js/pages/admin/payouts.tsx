@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { Wallet as MenuIcon } from 'lucide-react';
 import { ListFilters } from '@/components/list-filters';
 import { confirmAction } from '@/lib/sweet-alert';
 import {
@@ -176,7 +178,9 @@ export default function Payouts({ payouts }: { payouts: Paginated<Payout> }) {
             <Head title="Review payout" />
             <main className="grid gap-5 p-4 sm:p-6">
                 <header>
-                    <h1 className="text-2xl font-semibold">Payout mitra</h1>
+                    <MenuTitle icon={MenuIcon} tone="green">
+                        Payout mitra
+                    </MenuTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
                         Pengajuan dibuat oleh mitra. Finance meninjau dan
                         mencatat transfer manual.

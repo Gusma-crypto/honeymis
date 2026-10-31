@@ -110,7 +110,8 @@ class HoneyCommerceFoundationTest extends TestCase
         yield 'multilevel rule' => ['commission_rules', ['level' => 2]];
         yield 'recruitment rule' => ['commission_rules', ['strategy' => 'recruitment']];
         yield 'commission over 100 percent' => ['commission_rules', ['rate_bps' => 10001]];
-        yield 'multilevel commission' => ['commission_entries', ['level' => 2]];
+        yield 'commission beyond fifth generation' => ['commission_entries', ['level' => 6]];
+        yield 'direct commission has wrong level' => ['commission_entries', ['level' => 1, 'commission_type' => 'direct']];
         yield 'commission exceeds merchandise' => ['commission_entries', ['amount' => 200000]];
         yield 'negative payout' => ['payout_requests', ['amount' => -1]];
         yield 'paid without approval or proof' => ['payout_requests', ['status' => 'paid']];
@@ -266,7 +267,7 @@ class HoneyCommerceFoundationTest extends TestCase
         ]);
         $commission = DB::table('commission_entries')->insertGetId([
             'order_item_id' => $item, 'beneficiary_partner_id' => $partner, 'rule_id' => $rule,
-            'base_amount' => 150000, 'amount' => 15000, 'unique_key' => 'item:partner:1:rule:1',
+            'level' => 0, 'commission_type' => 'direct', 'base_amount' => 150000, 'amount' => 15000, 'unique_key' => 'item:partner:1:rule:1',
         ]);
         DB::table('payout_requests')->insert([
             'partner_id' => $partner, 'idempotency_key' => 'payout-1', 'amount' => 15000,

@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { ScrollText as MenuIcon } from 'lucide-react';
 import { ListFilters } from '@/components/list-filters';
 import { DataTable, DetailFields, RecordDialog } from '@/components/data-list';
 import { Head } from '@inertiajs/react';
@@ -22,7 +24,9 @@ export default function Audit({
         <>
             <Head title="Audit log" />
             <main className="grid gap-5 p-6">
-                <h1 className="text-3xl font-bold">Audit log</h1>
+                <MenuTitle icon={MenuIcon} tone="violet">
+                    Audit log
+                </MenuTitle>
                 <ListFilters
                     placeholder="Aksi, ID objek, atau ID aktor"
                     filterLabel="Objek"

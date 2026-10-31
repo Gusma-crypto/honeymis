@@ -22,6 +22,6 @@ class CommissionEntryFactory extends Factory
      */
     public function definition(): array
     {
-        return ['order_item_id' => OrderItem::factory(), 'beneficiary_partner_id' => Partner::factory()->active(), 'rule_id' => CommissionRule::factory(), 'level' => 1, 'base_amount' => 140000, 'amount' => 14000, 'reversed_amount' => 0, 'offset_amount' => 0, 'status' => 'pending', 'unique_key' => fake()->unique()->uuid()];
+        return ['order_item_id' => OrderItem::factory(), 'beneficiary_partner_id' => Partner::factory()->active(), 'rule_id' => CommissionRule::factory(), 'level' => 0, 'commission_type' => 'direct', 'base_amount' => 140000, 'amount' => 14000, 'reversed_amount' => 0, 'offset_amount' => 0, 'status' => 'pending', 'unique_key' => fake()->unique()->uuid()];
     }
 }

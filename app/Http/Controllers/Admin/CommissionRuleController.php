@@ -27,7 +27,7 @@ class CommissionRuleController extends Controller
         return Inertia::render('admin/commission-rules', ['listFilters' => $lists->values($request), 'rules' => $lists->apply($request, CommissionRule::query(), ['version'], [], ['draft', 'published', 'retired'])->orderByDesc('version')->paginate(20)->withQueryString()->through(fn (CommissionRule $rule): array => [
             'id' => $rule->id, 'version' => $rule->version, 'rate_bps' => $rule->rate_bps, 'fixed_amount' => $rule->fixed_amount, 'cap_amount' => $rule->cap_amount,
             'status' => $rule->status, 'product_id' => $rule->product_id, 'category_id' => $rule->category_id, 'valid_from' => $rule->valid_from->toIso8601String(),
-            'preview' => $rule->status === 'draft' ? $rules->preview($rule) : null]), 'budgetBps' => config('partners.commission_budget_bps'),
+            'preview' => $rule->status === 'draft' ? $rules->preview($rule) : null]),
             'nextVersion' => ((int) CommissionRule::max('version')) + 1, 'products' => Product::orderBy('name')->get(['id', 'name']), 'categories' => Category::orderBy('name')->get(['id', 'name'])]);
     }
 

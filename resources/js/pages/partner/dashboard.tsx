@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { Network as MenuIcon } from 'lucide-react';
 import { PartnerNetworkSummary } from '@/components/partner-network-summary';
 import type { PartnerNetworkData } from '@/components/partner-network-summary';
 import {
@@ -20,6 +22,8 @@ export default function PartnerDashboard({
     attributedOrders,
     network,
     networkSummary,
+    monthlyRank,
+    payoutHistory,
 }: {
     partner: {
         status: string;
@@ -30,6 +34,8 @@ export default function PartnerDashboard({
     commissions: {
         id: number;
         product: string;
+        level: number;
+        commission_type: string;
         amount: number;
         reversed_amount: number;
         offset_amount: number;
@@ -38,19 +44,40 @@ export default function PartnerDashboard({
     attributedOrders: number;
     network: { name: string; status: string }[];
     networkSummary: PartnerNetworkData | null;
+    monthlyRank: {
+        period_start: string;
+        rank: string;
+        personal_sales: number;
+        team_sales: number;
+        next_rank: string | null;
+        personal_target: number | null;
+        team_target: number | null;
+        personal_progress: number;
+        team_progress: number;
+    } | null;
+    payoutHistory: {
+        id: number;
+        amount: number;
+        status: string;
+        requested_at: string;
+        paid_at: string | null;
+    }[];
 }) {
-    const form = useForm({ sponsor_code: '', accept_terms: false });
+    const form = useForm({ sponsor_code: '', accept_terms: false, gender: '' });
     return (
         <>
             <Head title="Portal mitra" />
             <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
-                <h1 className="text-3xl font-bold">Portal mitra</h1>
+                <MenuTitle icon={MenuIcon} tone="blue">
+                    Portal mitra
+                </MenuTitle>
                 {networkSummary && (
                     <PartnerNetworkSummary data={networkSummary} />
                 )}
                 <p>
-                    Komisi berasal dari penjualan produk eligible satu level.
-                    Pendaftaran dan perekrutan tidak menghasilkan bonus.
+                    Komisi hanya berasal dari penjualan produk yang valid,
+                    maksimal lima generasi. Pendaftaran dan perekrutan tidak
+                    menghasilkan bonus.
                 </p>
                 {!partner ? (
                     <form
@@ -63,6 +90,20 @@ export default function PartnerDashboard({
                         <h2 className="text-xl font-semibold">
                             Ajukan kemitraan
                         </h2>
+                        <Field label="Jenis kelamin">
+                            <select
+                                className={inputClass}
+                                value={form.data.gender}
+                                required
+                                onChange={(event) =>
+                                    form.setData('gender', event.target.value)
+                                }
+                            >
+                                <option value="">Pilih jenis kelamin</option>
+                                <option value="male">Laki-laki</option>
+                                <option value="female">Perempuan</option>
+                            </select>
+                        </Field>
                         <Field label="Kode sponsor (opsional)">
                             <input
                                 className={inputClass}
@@ -112,6 +153,55 @@ export default function PartnerDashboard({
                                 </Field>
                             )}
                             <p>{attributedOrders} pesanan teratribusi</p>
+                            {monthlyRank && (
+                                <section className="grid gap-3 rounded-lg border p-4">
+                                    <h3 className="font-semibold">
+                                        Peringkat bulan ini: {monthlyRank.rank}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Periode {monthlyRank.period_start}
+                                        {monthlyRank.next_rank
+                                            ? ` · Target berikutnya: ${monthlyRank.next_rank}`
+                                            : ' · Peringkat tertinggi'}
+                                    </p>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div>
+                                            <p>
+                                                Omzet pribadi:{' '}
+                                                {money(
+                                                    monthlyRank.personal_sales,
+                                                )}
+                                            </p>
+                                            {monthlyRank.personal_target !==
+                                                null && (
+                                                <progress
+                                                    className="w-full"
+                                                    max="100"
+                                                    value={
+                                                        monthlyRank.personal_progress
+                                                    }
+                                                />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p>
+                                                Omzet tim:{' '}
+                                                {money(monthlyRank.team_sales)}
+                                            </p>
+                                            {monthlyRank.team_target !==
+                                                null && (
+                                                <progress
+                                                    className="w-full"
+                                                    max="100"
+                                                    value={
+                                                        monthlyRank.team_progress
+                                                    }
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
                             <div className="flex gap-5">
                                 <Link className="underline" href={wallet()}>
                                     Dompet & mutasi
@@ -161,6 +251,16 @@ export default function PartnerDashboard({
                                     {
                                         header: 'Produk',
                                         render: (c) => c.product,
+                                    },
+                                    {
+                                        header: 'Jenis komisi',
+                                        render: (c) =>
+                                            c.commission_type === 'direct'
+                                                ? 'Direct'
+                                                : c.commission_type ===
+                                                    'referral'
+                                                  ? 'Referral pertama'
+                                                  : `Generasi ${c.level}`,
                                     },
                                     {
                                         header: 'Komisi awal',
@@ -222,13 +322,55 @@ export default function PartnerDashboard({
                                 ]}
                             />
                         </section>
+                        <section className="grid gap-3">
+                            <h2 className="text-xl font-semibold">
+                                Riwayat payout terbaru
+                            </h2>
+                            <DataTable
+                                label="Riwayat payout terbaru"
+                                rows={payoutHistory}
+                                rowKey={(payout) => payout.id}
+                                columns={[
+                                    {
+                                        header: 'Pengajuan',
+                                        render: (payout) =>
+                                            new Date(
+                                                payout.requested_at,
+                                            ).toLocaleDateString('id-ID'),
+                                    },
+                                    {
+                                        header: 'Jumlah',
+                                        render: (payout) =>
+                                            money(payout.amount),
+                                    },
+                                    {
+                                        header: 'Status',
+                                        render: (payout) => (
+                                            <StatusBadge
+                                                status={payout.status}
+                                            />
+                                        ),
+                                    },
+                                    {
+                                        header: 'Dibayar',
+                                        render: (payout) =>
+                                            payout.paid_at === null
+                                                ? '—'
+                                                : new Date(
+                                                      payout.paid_at,
+                                                  ).toLocaleDateString('id-ID'),
+                                    },
+                                ]}
+                            />
+                        </section>
                         <section>
                             <h2 className="text-xl font-semibold">
                                 Jaringan sponsor langsung
                             </h2>
                             <p className="my-3 text-sm">
-                                Informasi jaringan saja; tanpa bonus perekrutan
-                                atau komisi bertingkat.
+                                Komisi generasi dihitung dari transaksi produk
+                                yang valid. Perekrutan atau biaya pendaftaran
+                                tidak menghasilkan bonus.
                             </p>
                             <DataTable
                                 label="Jaringan sponsor langsung"

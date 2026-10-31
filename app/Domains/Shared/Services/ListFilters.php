@@ -13,8 +13,8 @@ class ListFilters
      * @template TModel of Model
      *
      * @param  Builder<TModel>  $query
-     * @param  list<string>  $columns
-     * @param  array<string, list<string>>  $relations
+     * @param  list<literal-string>  $columns
+     * @param  array<string, list<literal-string>>  $relations
      * @param  list<string>  $statuses
      * @return Builder<TModel>
      */
@@ -26,16 +26,16 @@ class ListFilters
         ]);
         $filters = $this->values($request);
         if ($filters['search'] !== '') {
-            $pattern = '%'.addcslashes($filters['search'], '%_\\').'%';
+            $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $filters['search']).'%';
             $query->where(function (Builder $search) use ($columns, $relations, $pattern): void {
                 foreach ($columns as $column) {
-                    $search->orWhere($column, 'like', $pattern);
+                    $search->orWhereRaw($column." like ? escape '!'", [$pattern]);
                 }
                 foreach ($relations as $relation => $fields) {
                     $search->orWhereHas($relation, function (Builder $related) use ($fields, $pattern): void {
                         $related->where(function (Builder $nested) use ($fields, $pattern): void {
                             foreach ($fields as $field) {
-                                $nested->orWhere($field, 'like', $pattern);
+                                $nested->orWhereRaw($field." like ? escape '!'", [$pattern]);
                             }
                         });
                     });

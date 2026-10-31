@@ -24,16 +24,19 @@ class ProductRequest extends FormRequest
             'variants.*.label' => ['required', 'string', 'max:100'], 'variants.*.price' => ['required', 'integer', 'between:1,1000000000'],
             'variants.*.cost' => ['required', 'integer', 'between:0,1000000000'], 'variants.*.discount_amount' => ['required', 'integer', 'min:0', 'lte:variants.*.price'],
             'variants.*.status' => ['required', 'in:active,inactive,draft'], 'commission_eligible' => ['sometimes', 'boolean'],
+            'variants.*.member_price' => ['sometimes', 'nullable', 'integer', 'min:1', 'lte:variants.*.price'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 
-    /** @return array{category_id: int, sku: string, name: string, slug: string, description: string, status: string, weight_g: int, commission_eligible: bool, variants: list<array{id: int|null, sku: string, label: string, price: int, cost: int, discount_amount: int, status: string}>} */
+    /** @return array{category_id: int, sku: string, name: string, slug: string, description: string, status: string, weight_g: int, commission_eligible: bool, variants: list<array{id: int|null, sku: string, label: string, price: int, member_price?: int|null, cost: int, discount_amount: int, status: string}>} */
     public function productData(): array
     {
         $this->validated();
         $variants = array_values(array_map(fn (array $row): array => [
             'id' => empty($row['id']) ? null : (int) $row['id'], 'sku' => (string) $row['sku'], 'label' => (string) $row['label'],
             'price' => (int) $row['price'], 'cost' => (int) $row['cost'], 'discount_amount' => (int) $row['discount_amount'], 'status' => (string) $row['status'],
+            ...(array_key_exists('member_price', $row) ? ['member_price' => $row['member_price'] === null || $row['member_price'] === '' ? null : (int) $row['member_price']] : []),
         ], $this->array('variants')));
 
         return ['category_id' => $this->integer('category_id'), 'sku' => $this->string('sku')->toString(), 'name' => $this->string('name')->toString(),

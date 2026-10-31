@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+!.env.example
+node_modules
+vendor
+public/build
+public/hot
+storage
+bootstrap/cache/*.php
+database/*.sqlite
+**/*.sql
+tests
+docs
+.claude
+.github
+.phpunit.result.cache

@@ -16,13 +16,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $sku
  * @property array<string, string> $attributes
  * @property int $price
+ * @property int|null $member_price
  * @property int $cost
  * @property int $discount_amount
  * @property string $status
  * @property Product $product
  * @property InventoryBalance|null $inventory
  */
-#[Fillable(['product_id', 'sku', 'attributes', 'price', 'cost', 'discount_amount', 'status'])]
+#[Fillable(['product_id', 'sku', 'attributes', 'price', 'member_price', 'cost', 'discount_amount', 'status'])]
 class ProductVariant extends Model
 {
     /** @use HasFactory<ProductVariantFactory> */
@@ -39,6 +40,7 @@ class ProductVariant extends Model
         return [
             'attributes' => 'array',
             'price' => 'integer',
+            'member_price' => 'integer',
             'cost' => 'integer',
             'discount_amount' => 'integer',
         ];

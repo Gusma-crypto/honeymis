@@ -31,11 +31,11 @@ class ReadQueryPerformanceTest extends FinanceTestCase
         DB::enableQueryLog();
         DB::flushQueryLog();
 
-        $this->assertSame(15000, app(PartnerLedger::class)->withdrawable($this->partner->id));
+        $this->assertSame(35000, app(PartnerLedger::class)->withdrawable($this->partner->id));
         $this->assertCount(2, DB::getQueryLog());
         DB::disableQueryLog();
         app(ManagePayout::class)->decide($this->finance, $payout, 'reject', (string) Str::uuid(), 'Uji pengembalian reservasi');
-        $this->assertSame(20000, app(PartnerLedger::class)->withdrawable($this->partner->id));
+        $this->assertSame(40000, app(PartnerLedger::class)->withdrawable($this->partner->id));
         $this->artisan('honey:reconcile-finance')->assertSuccessful();
     }
 
@@ -59,7 +59,7 @@ class ReadQueryPerformanceTest extends FinanceTestCase
         DB::flushQueryLog();
 
         $snapshot = app(CheckoutAttribution::class)->snapshot($buyer, $token, [$specific->id, $categoryVariant->id, $globalVariant->id, $ineligible->id]);
-        $queries = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_contains($query['query'], 'from `commission_rules`'));
+        $queries = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_contains(str_replace(['`', '"'], '', $query['query']), 'from commission_rules'));
         DB::disableQueryLog();
         $this->assertCount(1, $queries);
         $this->assertSame($productRule->id, $snapshot['items'][$specific->id]['rule_id']);
@@ -77,7 +77,7 @@ class ReadQueryPerformanceTest extends FinanceTestCase
         DB::flushQueryLog();
 
         $this->get(route('catalog.index'))->assertOk()->assertInertia(fn (Assert $page) => $page->has('products.data', 1)->has('products.data.0.variants', 1)->where('products.data.0.variants.0.id', $active->id));
-        $stockQueries = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_contains($query['query'], 'from `inventory_balances`'));
+        $stockQueries = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_contains(str_replace(['`', '"'], '', $query['query']), 'from inventory_balances'));
         DB::disableQueryLog();
         $this->assertCount(1, $stockQueries);
         $this->assertStringContainsString("in ({$active->id})", $stockQueries->first()['query']);
@@ -95,7 +95,7 @@ class ReadQueryPerformanceTest extends FinanceTestCase
         DB::flushQueryLog();
 
         $summary = app(DashboardSummary::class)->forUser($this->finance);
-        $queries = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_contains($query['query'], 'from `payout_requests`'));
+        $queries = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_contains(str_replace(['`', '"'], '', $query['query']), 'from payout_requests'));
         DB::disableQueryLog();
         $this->assertSame(['requested' => 1, 'approved' => 1, 'reserved' => 5000], $summary['payouts']);
         $this->assertCount(1, $queries);

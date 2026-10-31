@@ -36,7 +36,6 @@ export default function Register({ passwordRules, localTesting }: Props) {
                                     type="text"
                                     required
                                     autoFocus
-                                    tabIndex={1}
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Nama lengkap"
@@ -53,12 +52,32 @@ export default function Register({ passwordRules, localTesting }: Props) {
                                     id="email"
                                     type="email"
                                     required
-                                    tabIndex={2}
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="gender">Jenis kelamin</Label>
+                                <select
+                                    id="gender"
+                                    name="gender"
+                                    required
+                                    defaultValue=""
+                                    className="h-10 rounded-lg border bg-background px-3 text-sm"
+                                >
+                                    <option value="" disabled>
+                                        Pilih jenis kelamin
+                                    </option>
+                                    <option value="male">Laki-laki</option>
+                                    <option value="female">Perempuan</option>
+                                </select>
+                                <p className="text-xs text-muted-foreground">
+                                    Avatar kartun mengikuti pilihan ini sampai
+                                    Anda memasang foto profil.
+                                </p>
+                                <InputError message={errors.gender} />
                             </div>
 
                             <div className="grid gap-2">
@@ -70,7 +89,6 @@ export default function Register({ passwordRules, localTesting }: Props) {
                                     type="tel"
                                     name="whatsapp_number"
                                     autoComplete="tel"
-                                    tabIndex={3}
                                     maxLength={30}
                                     placeholder="081234567890 atau +6281234567890"
                                 />
@@ -89,7 +107,6 @@ export default function Register({ passwordRules, localTesting }: Props) {
                                 <PasswordInput
                                     id="password"
                                     required
-                                    tabIndex={4}
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Buat kata sandi akun ini"
@@ -105,7 +122,6 @@ export default function Register({ passwordRules, localTesting }: Props) {
                                 <PasswordInput
                                     id="password_confirmation"
                                     required
-                                    tabIndex={5}
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Ulangi kata sandi"
@@ -119,7 +135,6 @@ export default function Register({ passwordRules, localTesting }: Props) {
                             <Button
                                 type="submit"
                                 className="mt-2 w-full"
-                                tabIndex={6}
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
@@ -129,9 +144,7 @@ export default function Register({ passwordRules, localTesting }: Props) {
 
                         <div className="text-center text-sm text-muted-foreground">
                             Sudah memiliki akun?{' '}
-                            <TextLink href={login()} tabIndex={7}>
-                                Masuk
-                            </TextLink>
+                            <TextLink href={login()}>Masuk</TextLink>
                         </div>
                     </>
                 )}

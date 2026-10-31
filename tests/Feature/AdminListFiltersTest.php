@@ -79,7 +79,7 @@ class AdminListFiltersTest extends TestCase
         $variant = ProductVariant::factory()->create(['sku' => 'AZURE-SPECIAL']);
 
         $this->get(route('admin.catalog.index', ['search' => 'Azure', 'status' => 'active']))->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->where('products.total', 19)->has('products.data', 15)
+            ->where('products.total', 19)->has('products.data', 8)
             ->where('products.next_page_url', fn (?string $url): bool => $url !== null && str_contains($url, 'search=Azure') && str_contains($url, 'status=active')));
         $this->get(route('admin.catalog.index', ['search' => 'AZURE-SPECIAL', 'status' => 'active']))->assertOk()->assertInertia(fn (Assert $page) => $page->has('products.data', 1)->where('products.data.0.id', $variant->product_id));
     }

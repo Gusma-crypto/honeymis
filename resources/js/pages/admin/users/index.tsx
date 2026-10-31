@@ -18,7 +18,8 @@ import { Pager } from '@/components/commerce-ui';
 import { Head, useForm } from '@inertiajs/react';
 import { useRef } from 'react';
 import type { FormEvent } from 'react';
-import Heading from '@/components/heading';
+import { MenuTitle } from '@/components/menu-title';
+import { ShieldCheck as MenuIcon } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -290,9 +291,11 @@ export default function UserAccessIndex({ users, availableRoles }: Props) {
         <>
             <Head title="Akses pengguna" />
             <div className="flex flex-col gap-6 p-4 md:p-6">
-                <Heading
+                <MenuTitle
+                    icon={MenuIcon}
+                    tone="violet"
                     title="Akses pengguna"
-                    description="Kelola role dan status akun. Setiap perubahan dicatat dalam audit."
+                    description="Kelola peran, izin akses, dan status akun. Setiap perubahan tercatat dalam audit."
                 />
                 <div className="flex justify-end">
                     <RecordDialog

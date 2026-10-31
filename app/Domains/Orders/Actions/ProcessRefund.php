@@ -9,6 +9,7 @@ use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\Models\OrderItem;
 use App\Domains\Orders\Models\Refund;
 use App\Domains\Partners\Models\Partner;
+use App\Domains\Partners\Services\PartnerRankService;
 use App\Domains\Payouts\Actions\ManagePayout;
 use App\Domains\Payouts\Models\PayoutRequest;
 use App\Domains\Shared\Services\AuditWriter;
@@ -22,7 +23,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProcessRefund
 {
-    public function __construct(private CommissionEngine $commissions, private PartnerLedger $ledger, private ManagePayout $payouts, private AuditWriter $audit) {}
+    public function __construct(private CommissionEngine $commissions, private PartnerLedger $ledger, private ManagePayout $payouts, private AuditWriter $audit, private PartnerRankService $ranks) {}
 
     public function request(User $user, Order $order, ?int $itemId, int $amount, string $reason, string $key): Refund
     {
@@ -63,21 +64,23 @@ class ProcessRefund
             }
             $this->validateAmount($locked, $itemId, $amount, false);
             $this->commissions->accrue($locked->id);
-            $partner = $locked->partner_referral_id === null ? null : Partner::whereKey($locked->partner_referral_id)->lockForUpdate()->firstOrFail();
             $refund ??= Refund::create(['order_id' => $locked->id, 'order_item_id' => $itemId, 'amount' => $amount, 'reason' => $reason, 'idempotency_key' => $key, 'request_fingerprint' => $fingerprint, 'status' => 'requested']);
             $refund->update(['status' => 'processed', 'processed_by' => $actor->id, 'processed_at' => now()]);
-            if ($itemId !== null && $partner !== null) {
-                foreach (CommissionEntry::where('order_item_id', $itemId)->where('beneficiary_partner_id', $partner->id)->orderBy('id')->lockForUpdate()->get() as $entry) {
+            if ($itemId !== null) {
+                $entries = CommissionEntry::where('order_item_id', $itemId)->orderBy('id')->lockForUpdate()->get();
+                $partnerIds = $entries->pluck('beneficiary_partner_id')->unique()->all();
+                $partners = Partner::whereIn('id', $partnerIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+                foreach ($entries as $entry) {
+                    $partner = $partners->get($entry->beneficiary_partner_id);
+                    if ($partner === null) {
+                        continue;
+                    }
                     $payoutIds = DB::table('payout_allocations')->where('commission_entry_id', $entry->id)->pluck('payout_id');
                     foreach (PayoutRequest::whereIn('id', $payoutIds)->whereIn('status', ['requested', 'approved'])->orderBy('id')->lockForUpdate()->get() as $openPayout) {
                         $this->payouts->releaseForRefund($openPayout, $refund->id);
                     }
                     $entry->refresh();
                     $cumulativeRefund = (int) Refund::where('order_item_id', $itemId)->where('status', 'processed')->sum('amount');
-                    $snapshot = $entry->item->commission_snapshot;
-                    if ($snapshot === null) {
-                        throw ValidationException::withMessages(['refund' => 'Snapshot komisi tidak tersedia untuk rekonsiliasi.']);
-                    }
                     $newEntitlement = (new Idr($entry->amount))->proportion(max(0, $entry->base_amount - $cumulativeRefund), $entry->base_amount)->amount;
                     $delta = max(0, $entry->amount - $newEntitlement - $entry->reversed_amount);
                     if ($delta < 1) {
@@ -93,7 +96,9 @@ class ProcessRefund
                     $entry->update(['reversed_amount' => $entry->reversed_amount + $delta]);
                     $this->ledger->refreshStatus($entry);
                 }
-                $this->ledger->settleDebt($partner->id, 'refund:'.$refund->id.':offset', $refund->id);
+                foreach ($partnerIds as $partnerId) {
+                    $this->ledger->settleDebt((int) $partnerId, 'refund:'.$refund->id.':partner:'.$partnerId.':offset', $refund->id);
+                }
             }
             if ((int) Refund::where('order_id', $locked->id)->where('status', 'processed')->sum('amount') >= $locked->grand_total) {
                 if (in_array($locked->status, ['paid', 'processing'], true)) {
@@ -104,6 +109,7 @@ class ProcessRefund
                 DB::table('outbox_messages')->insert(['event_key' => 'refund:'.$refund->id.':full', 'event_type' => 'orders.state_changed', 'aggregate_type' => 'orders', 'aggregate_id' => $locked->id,
                     'payload' => '{"to":"refunded"}', 'available_at' => now(), 'created_at' => now()]);
             }
+            $this->ranks->recalculateForOrder($locked);
             if ($locked->customer->user_id !== null) {
                 app(CommerceNotifier::class)->queue($locked->customer->user_id, 'refund:'.$refund->id.':processed', 'Refund diproses', 'Refund #'.$refund->id.' untuk order '.$locked->order_number.' telah dicatat.', route('orders.show', $locked->id, false));
             }

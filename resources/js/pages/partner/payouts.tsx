@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { Banknote as MenuIcon } from 'lucide-react';
 import { ListFilters } from '@/components/list-filters';
 import { confirmAction } from '@/lib/sweet-alert';
 import {
@@ -48,7 +50,9 @@ export default function Payouts({
         <>
             <Head title="Payout mitra" />
             <main className="grid gap-6 p-6">
-                <h1 className="text-3xl font-bold">Payout mitra</h1>
+                <MenuTitle icon={MenuIcon} tone="green">
+                    Payout mitra
+                </MenuTitle>
                 <p>
                     Saldo dapat ditarik {money(withdrawable)} &middot; Minimum{' '}
                     {money(minimum)}

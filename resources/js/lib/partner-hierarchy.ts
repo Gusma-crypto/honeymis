@@ -4,8 +4,69 @@ export type HierarchyNode = {
     name: string;
     status: string;
     level: number;
+    gender?: 'male' | 'female' | null;
+    avatar?: string | null;
+    referral_code?: string;
+    joined_at?: string | null;
 };
 export type PositionedNode = HierarchyNode & { x: number; y: number };
+export type NetworkCardNode = PositionedNode & {
+    card_width: number;
+    card_height: number;
+    relative_level: number;
+};
+
+export function layoutNetworkCards(
+    nodes: HierarchyNode[],
+    rootId: number,
+    depth = 2,
+) {
+    const base = layoutHierarchy(nodes, rootId, depth, 150);
+    const rootLevel = nodes.find((node) => node.id === rootId)?.level ?? 0;
+    const leafCount = base.nodes.filter(
+        (node) => !base.edges.some((edge) => edge.parent.id === node.id),
+    ).length;
+    const firstLevelCount = base.nodes.filter(
+        (node) => node.level - rootLevel === 1,
+    ).length;
+    const width = Math.max(
+        900,
+        leafCount * 82 + 140,
+        firstLevelCount * 154 + 130,
+    );
+    const sidePadding = firstLevelCount === leafCount ? 154 : 115;
+    const left = Math.min(...base.nodes.map((node) => node.x));
+    const right = Math.max(...base.nodes.map((node) => node.x));
+    const positioned: NetworkCardNode[] = base.nodes.map((node) => {
+        const level = node.level - rootLevel;
+        return {
+            ...node,
+            x:
+                right === left
+                    ? width / 2
+                    : sidePadding +
+                      ((node.x - left) / (right - left)) *
+                          (width - sidePadding * 2),
+            y: 15 + level * 104,
+            card_width: level === 0 ? 184 : level === 1 ? 140 : 76,
+            card_height: level === 0 ? 74 : level === 1 ? 64 : 86,
+            relative_level: level,
+        };
+    });
+    const byId = new Map(positioned.map((node) => [node.id, node]));
+    const edges = base.edges.flatMap((edge) => {
+        const parent = byId.get(edge.parent.id);
+        const child = byId.get(edge.child.id);
+        return parent && child ? [{ parent, child }] : [];
+    });
+    return {
+        ...base,
+        width,
+        height: Math.max(365, 15 + depth * 104 + 145),
+        nodes: positioned,
+        edges,
+    };
+}
 export type HierarchyLayout = {
     nodes: PositionedNode[];
     edges: { parent: PositionedNode; child: PositionedNode }[];

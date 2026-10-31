@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/profile';
 import type { Auth } from '@/types';
 import { send } from '@/routes/verification';
+import { MemberAvatar } from '@/components/member-avatar';
 
 type PageProps = {
     auth: Auth;
@@ -26,15 +27,15 @@ export default function Profile({
 
     return (
         <>
-            <Head title="Profile settings" />
+            <Head title="Pengaturan profil" />
 
-            <h1 className="sr-only">Profile settings</h1>
+            <h1 className="sr-only">Pengaturan profil</h1>
 
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Profile"
-                    description="Update your name and email address"
+                    title="Profil Anda"
+                    description="Perbarui nama dan alamat email Anda."
                 />
 
                 <Form
@@ -46,8 +47,47 @@ export default function Profile({
                 >
                     {({ processing, errors }) => (
                         <>
+                            <div className="flex items-center gap-4">
+                                <span className="size-20 shrink-0">
+                                    <MemberAvatar
+                                        name={auth.user.name}
+                                        gender={auth.user.gender}
+                                        photo={auth.user.avatar}
+                                        className="size-20 rounded-full"
+                                    />
+                                </span>
+                                <div className="grid flex-1 gap-2">
+                                    <Label htmlFor="photo">Foto profil</Label>
+                                    <input
+                                        type="file"
+                                        id="photo"
+                                        name="photo"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        className="text-sm"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        JPG, PNG, atau WebP, maksimal 2 MB.
+                                        Tanpa foto, avatar kartun digunakan.
+                                    </p>
+                                    <InputError message={errors.photo} />
+                                </div>
+                            </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="gender">Jenis kelamin</Label>
+                                <select
+                                    id="gender"
+                                    name="gender"
+                                    defaultValue={auth.user.gender ?? ''}
+                                    className="h-10 rounded-lg border bg-background px-3 text-sm"
+                                >
+                                    <option value="">Belum diisi</option>
+                                    <option value="male">Laki-laki</option>
+                                    <option value="female">Perempuan</option>
+                                </select>
+                                <InputError message={errors.gender} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Nama lengkap</Label>
 
                                 <Input
                                     id="name"
@@ -56,7 +96,7 @@ export default function Profile({
                                     name="name"
                                     required
                                     autoComplete="name"
-                                    placeholder="Full name"
+                                    placeholder="Nama lengkap"
                                 />
 
                                 <InputError
@@ -66,7 +106,7 @@ export default function Profile({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">Alamat email</Label>
 
                                 <Input
                                     id="email"
@@ -76,7 +116,7 @@ export default function Profile({
                                     name="email"
                                     required
                                     autoComplete="username"
-                                    placeholder="Email address"
+                                    placeholder="Alamat email"
                                 />
 
                                 <InputError
@@ -115,7 +155,7 @@ export default function Profile({
                                     disabled={processing}
                                     data-test="update-profile-button"
                                 >
-                                    Save
+                                    Simpan perubahan
                                 </Button>
                             </div>
                         </>
@@ -131,7 +171,7 @@ export default function Profile({
 Profile.layout = {
     breadcrumbs: [
         {
-            title: 'Profile settings',
+            title: 'Pengaturan profil',
             href: edit(),
         },
     ],

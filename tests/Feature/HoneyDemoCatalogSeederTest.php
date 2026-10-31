@@ -9,6 +9,7 @@ use App\Models\User;
 use Database\Seeders\HoneyDemoCatalogSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use RuntimeException;
 use Tests\TestCase;
@@ -19,6 +20,7 @@ class HoneyDemoCatalogSeederTest extends TestCase
 
     public function test_demo_catalog_is_buyable_and_rerun_preserves_existing_products_and_consumed_stock(): void
     {
+        Storage::fake('public');
         $this->seed(RolePermissionSeeder::class);
         $admin = User::factory()->create();
         $admin->assignRole('super_admin');
@@ -32,6 +34,8 @@ class HoneyDemoCatalogSeederTest extends TestCase
 
         $this->assertDatabaseCount('products', 9);
         $this->assertDatabaseCount('product_variants', 17);
+        $this->assertDatabaseCount('product_images', 8);
+        Storage::disk('public')->assertExists('demo/products/demo-madu-hutan.jpg');
         $this->assertSame('Nama demo yang telah diedit', $demo->fresh()->name);
         $this->assertDatabaseHas('inventory_balances', ['variant_id' => $variant->id, 'on_hand' => 23]);
         $this->assertDatabaseHas('inventory_balances', ['variant_id' => $existing->id, 'on_hand' => 7]);

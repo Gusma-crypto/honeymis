@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Domains\Commissions\Services\CommissionEngine;
 use App\Domains\Orders\Models\Order;
-use App\Domains\Partners\Models\Partner;
 use App\Domains\Shared\Services\AuditWriter;
 use App\Domains\Shared\Services\CommerceNotifier;
 use App\Domains\Shared\Services\FinanceOutbox;
@@ -15,14 +14,13 @@ class ProcessFinance extends Command
 {
     protected $signature = 'honey:process-finance {--limit=100}';
 
-    protected $description = 'Process committed order events, catch up direct commissions and release eligible earnings';
+    protected $description = 'Process committed order events, catch up MLM commissions and release eligible earnings';
 
     public function handle(FinanceOutbox $outbox, CommissionEngine $commissions, AuditWriter $audit): int
     {
         $limit = max(1, min(1000, (int) $this->option('limit')));
         $count = $outbox->process($limit);
-        $activePartners = Partner::where('status', 'active')->whereHas('user', fn ($query) => $query->where('status', 'active'))->select('id');
-        foreach (Order::whereIn('partner_referral_id', $activePartners)->whereNotNull('commission_rule_id')->whereNull('commission_checked_at')->where('fraud_hold', false)->whereIn('status', ['paid', 'processing', 'shipped', 'delivered', 'completed'])->orderBy('id')->limit($limit)->get() as $order) {
+        foreach (Order::whereNotNull('partner_referral_id')->whereNull('commission_checked_at')->where('fraud_hold', false)->whereIn('status', ['paid', 'processing', 'shipped', 'delivered', 'completed'])->orderBy('id')->limit($limit)->get() as $order) {
             $commissions->accrue($order->id);
         }
         $pendingEntries = DB::table('commission_entries')->join('order_items', 'order_items.id', '=', 'commission_entries.order_item_id')->select('order_items.order_id')

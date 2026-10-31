@@ -25,7 +25,7 @@ class WalletPayoutTest extends FinanceTestCase
         $paidKey = (string) Str::uuid();
         $service->decide($this->finance, $payout, 'paid', $paidKey, reference: 'TEST-REF-001', proof: $proof, confirmed: true);
         $service->decide($this->finance, $payout, 'paid', $paidKey, reference: 'TEST-REF-001', proof: $proof, confirmed: true);
-        $this->assertSame(['pending' => 0, 'available' => 4000, 'reserved' => 0, 'paid' => 6000, 'receivable' => 0], app(PartnerLedger::class)->balances($this->partner->id));
+        $this->assertSame(['pending' => 0, 'available' => 14000, 'reserved' => 0, 'paid' => 6000, 'receivable' => 0], app(PartnerLedger::class)->balances($this->partner->id));
         $this->assertStringNotContainsString('1234567890', $payout->getRawOriginal('bank_account_encrypted'));
         $this->artisan('honey:reconcile-finance')->assertSuccessful();
     }
@@ -39,7 +39,7 @@ class WalletPayoutTest extends FinanceTestCase
         $key = (string) Str::uuid();
         $service->decide($this->finance, $payout, 'reject', $key, 'Bank tidak sesuai');
         $service->decide($this->finance, $payout, 'reject', $key, 'Bank tidak sesuai');
-        $this->assertSame(10000, app(PartnerLedger::class)->withdrawable($this->partner->id));
+        $this->assertSame(20000, app(PartnerLedger::class)->withdrawable($this->partner->id));
         $this->artisan('honey:reconcile-finance')->assertSuccessful();
     }
 
@@ -48,7 +48,7 @@ class WalletPayoutTest extends FinanceTestCase
         $this->financeActors();
         $this->commissionOrder(true);
         $service = app(ManagePayout::class);
-        $service->request($this->partner->user, $this->partner, 8000, $this->bank(), (string) Str::uuid());
+        $service->request($this->partner->user, $this->partner, 18000, $this->bank(), (string) Str::uuid());
         $this->expectException(ValidationException::class);
         $service->request($this->partner->user, $this->partner, 3000, $this->bank(), (string) Str::uuid());
     }

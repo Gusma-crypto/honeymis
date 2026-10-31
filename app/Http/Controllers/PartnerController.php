@@ -6,8 +6,11 @@ use App\Domains\Commissions\Models\CommissionEntry;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Partners\Actions\ManagePartner;
 use App\Domains\Partners\Models\Partner;
+use App\Domains\Partners\Models\PartnerMonthlyRank;
 use App\Domains\Partners\Services\NetworkSummary;
+use App\Domains\Partners\Services\PartnerRankService;
 use App\Domains\Partners\Services\ReferralCapture;
+use App\Domains\Payouts\Models\PayoutRequest;
 use App\Domains\Wallet\Services\PartnerLedger;
 use App\Http\Requests\Partner\PartnerApplicationRequest;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +21,24 @@ use Inertia\Response;
 
 class PartnerController extends Controller
 {
-    public function index(Request $request, PartnerLedger $ledger, NetworkSummary $networks): Response
+    public function networkPage(Request $request, NetworkSummary $networks, PartnerRankService $ranks): Response
+    {
+        $partner = Partner::where('user_id', $request->user()->id)->firstOrFail();
+        Gate::authorize('view', $partner);
+        $summary = $ranks->currentSummary($partner);
+        $network = $networks->forRoot($partner->id);
+        $ids = array_column($network['nodes'], 'id');
+        $visibleRanks = PartnerMonthlyRank::whereIn('partner_id', $ids)->where('period_start', $summary['period_start'])->pluck('rank', 'partner_id');
+        $earned = (int) CommissionEntry::where('beneficiary_partner_id', $partner->id)->selectRaw('COALESCE(SUM(amount - reversed_amount), 0) as earned')->value('earned');
+
+        return Inertia::render('partner/network', [
+            'networkSummary' => $network,
+            'ranks' => $visibleRanks,
+            'ownSummary' => ['rank' => $summary['rank'], 'personal_sales' => $summary['personal_sales'], 'team_sales' => $summary['team_sales'], 'commissions' => $earned],
+        ]);
+    }
+
+    public function index(Request $request, PartnerLedger $ledger, NetworkSummary $networks, PartnerRankService $ranks): Response
     {
         $partner = Partner::where('user_id', $request->user()->id)->first();
         if ($partner !== null) {
@@ -36,6 +56,8 @@ class PartnerController extends Controller
             'commissions' => $partner === null ? [] : $this->commissions($partner),
             'attributedOrders' => $partner === null ? 0 : Order::where('partner_referral_id', $partner->id)->count(),
             'networkSummary' => $partner === null ? null : $networks->forRoot($partner->id),
+            'monthlyRank' => $partner === null ? null : $ranks->currentSummary($partner),
+            'payoutHistory' => $partner === null ? [] : $this->payoutHistory($partner),
             'network' => $partner === null ? [] : $this->network($partner),
         ]);
     }
@@ -45,10 +67,12 @@ class PartnerController extends Controller
     {
         return CommissionEntry::with('item:id,name_snapshot')
             ->where('beneficiary_partner_id', $partner->id)->orderByDesc('id')->limit(50)
-            ->get(['id', 'order_item_id', 'amount', 'reversed_amount', 'offset_amount', 'status', 'eligible_at'])
+            ->get(['id', 'order_item_id', 'level', 'commission_type', 'amount', 'reversed_amount', 'offset_amount', 'status', 'eligible_at'])
             ->map(fn (CommissionEntry $entry): array => [
                 'id' => $entry->id,
                 'product' => $entry->item->name_snapshot,
+                'level' => $entry->level,
+                'commission_type' => $entry->commission_type,
                 'amount' => $entry->amount,
                 'reversed_amount' => $entry->reversed_amount,
                 'offset_amount' => $entry->offset_amount,
@@ -65,8 +89,25 @@ class PartnerController extends Controller
             ->map(fn (Partner $child): array => ['name' => $child->user->name, 'status' => $child->status])->all();
     }
 
+    /** @return array<int, array{id: int, amount: int, status: string, requested_at: string, paid_at: string|null}> */
+    private function payoutHistory(Partner $partner): array
+    {
+        return PayoutRequest::where('partner_id', $partner->id)->orderByDesc('id')->limit(10)
+            ->get(['id', 'amount', 'status', 'requested_at', 'paid_at'])
+            ->map(fn (PayoutRequest $payout): array => [
+                'id' => $payout->id,
+                'amount' => $payout->amount,
+                'status' => $payout->status,
+                'requested_at' => $payout->requested_at->toIso8601String(),
+                'paid_at' => $payout->paid_at?->toIso8601String(),
+            ])->all();
+    }
+
     public function store(PartnerApplicationRequest $request, ManagePartner $partners): RedirectResponse
     {
+        if ($request->filled('gender')) {
+            $request->user()->update(['gender' => $request->validated('gender')]);
+        }
         $partners->apply($request->user(), $request->string('sponsor_code')->toString() ?: null);
 
         return to_route('partner.dashboard');

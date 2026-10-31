@@ -17,7 +17,7 @@ class SaveProduct
 {
     public function __construct(private AuditWriter $audit) {}
 
-    /** @param array{category_id: int, sku: string, name: string, slug: string, description?: string|null, status: string, weight_g: int, commission_eligible?: bool, variants: list<array{id?: int|null, sku: string, label: string, price: int, cost: int, discount_amount: int, status: string}>} $data */
+    /** @param array{category_id: int, sku: string, name: string, slug: string, description?: string|null, status: string, weight_g: int, commission_eligible?: bool, variants: list<array{id?: int|null, sku: string, label: string, price: int, member_price?: int|null, cost: int, discount_amount: int, status: string}>} $data */
     public function handle(User $actor, ?Product $product, array $data): Product
     {
         Gate::forUser($actor)->authorize('manage', Product::class);
@@ -37,6 +37,9 @@ class SaveProduct
                     throw ValidationException::withMessages(['variants' => 'SKU varian sudah digunakan.']);
                 }
                 $values = ['sku' => $row['sku'], 'attributes' => ['label' => $row['label']], 'price' => $row['price'], 'cost' => $row['cost'], 'discount_amount' => $row['discount_amount'], 'status' => $row['status']];
+                if (array_key_exists('member_price', $row)) {
+                    $values['member_price'] = $row['member_price'];
+                }
                 $variant === null ? $variant = $locked->variants()->create($values) : $variant->update($values);
                 InventoryBalance::firstOrCreate(['variant_id' => $variant->id], ['on_hand' => 0, 'reserved' => 0]);
             }

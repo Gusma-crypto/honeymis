@@ -16,6 +16,7 @@ class PartnerApplicationRequest extends FormRequest
     {
         return [
             'sponsor_code' => ['nullable', 'string', 'max:24'], 'accept_terms' => ['required', 'accepted'],
+            'gender' => ['nullable', 'in:male,female'],
         ];
     }
 }

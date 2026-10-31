@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { ReceiptText as MenuIcon } from 'lucide-react';
 import {
     ArrowDownToLine,
     ArrowRight,
@@ -130,9 +132,9 @@ export default function OrderDetail({
                     <p className="text-sm text-muted-foreground">
                         Nomor pesanan
                     </p>
-                    <h1 className="text-2xl font-bold break-all">
+                    <MenuTitle icon={MenuIcon} tone="blue">
                         {order.order_number}
-                    </h1>
+                    </MenuTitle>
                     <div className="mt-3">
                         <StatusBadge status={order.status} />
                     </div>

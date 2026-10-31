@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
@@ -11,6 +12,22 @@ use Tests\TestCase;
 class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_password_login_allows_admin_pages_without_immediate_reconfirmation(): void
+    {
+        $this->freezeTime();
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('super_admin');
+
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+            ->assertSessionHas('auth.password_confirmed_at', now()->timestamp);
+
+        $this->get(route('admin.catalog.index'))->assertOk();
+        $this->get(route('admin.partners.index'))->assertOk();
+        $this->travel((int) config('auth.password_timeout') + 1)->seconds();
+        $this->get(route('admin.catalog.index'))->assertRedirect(route('password.confirm'));
+    }
 
     public function test_login_screen_can_be_rendered()
     {
@@ -50,6 +67,7 @@ class AuthenticationTest extends TestCase
 
         $response->assertRedirect(route('two-factor.login'));
         $response->assertSessionHas('login.id', $user->id);
+        $response->assertSessionMissing('auth.password_confirmed_at');
         $this->assertGuest();
     }
 
@@ -60,7 +78,7 @@ class AuthenticationTest extends TestCase
         $this->post(route('login.store'), [
             'email' => $user->email,
             'password' => 'wrong-password',
-        ]);
+        ])->assertSessionMissing('auth.password_confirmed_at');
 
         $this->assertGuest();
     }

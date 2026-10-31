@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domains\Wallet\Services\PartnerLedger;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
 use Tests\FinanceTestCase;
@@ -43,7 +44,7 @@ while (! file_exists($arguments['barrier'].'.go')) {
 try {
     $partner = App\Domains\Partners\Models\Partner::findOrFail($arguments['partner']);
     config(['partners.minimum_payout_idr' => 1000]);
-    app(App\Domains\Payouts\Actions\ManagePayout::class)->request($partner->user, $partner, 8000, ['bank_name'=>'Test','account_name'=>'Test','account_number'=>'1234567890'], $arguments['key']);
+    app(App\Domains\Payouts\Actions\ManagePayout::class)->request($partner->user, $partner, 12000, ['bank_name'=>'Test','account_name'=>'Test','account_number'=>'1234567890'], $arguments['key']);
     echo 'placed';
 } catch (Illuminate\Validation\ValidationException $exception) {
     echo 'rejected';
@@ -86,13 +87,27 @@ PHP;
         $this->assertSame(['placed', 'rejected'], $results);
         $this->assertDatabaseCount('payout_requests', 1);
         $balances = app(PartnerLedger::class)->balances($this->partner->id);
-        $this->assertSame(8000, $balances['reserved']);
-        $this->assertSame(2000, $balances['available']);
+        $this->assertSame(12000, $balances['reserved']);
+        $this->assertSame(8000, $balances['available']);
         $this->artisan('honey:reconcile-finance')->assertSuccessful();
     }
 
     public function refreshDatabase(): void
     {
         // DatabaseMigrations owns isolation so child processes can see committed fixtures.
+    }
+
+    protected function tearDown(): void
+    {
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            Schema::disableForeignKeyConstraints();
+            try {
+                DB::table('commission_entries')->delete();
+            } finally {
+                Schema::enableForeignKeyConstraints();
+            }
+        }
+
+        parent::tearDown();
     }
 }

@@ -53,17 +53,18 @@ abstract class FinanceTestCase extends TestCase
     }
 
     /** @param array<string, mixed> $ruleAttributes */
-    protected function commissionOrder(bool $mature = false, ?User $buyer = null, bool $eligible = true, bool $publishRule = true, array $ruleAttributes = []): Order
+    protected function commissionOrder(bool $mature = false, ?User $buyer = null, bool $eligible = true, bool $publishRule = true, array $ruleAttributes = [], int $quantity = 1, ?Partner $referralPartner = null): Order
     {
         $buyer ??= User::factory()->create();
-        $variant = ProductVariant::factory()->withStock()->create(['price' => 100000, 'discount_amount' => 0]);
+        $referralPartner ??= $this->partner;
+        $variant = ProductVariant::factory()->withStock(max(10, $quantity))->create(['price' => 100000, 'cost' => 60000, 'discount_amount' => 0]);
         $variant->product->update(['commission_eligible' => $eligible]);
         $rule = CommissionRule::factory()->create($ruleAttributes);
         if ($publishRule) {
             app(ManageCommissionRule::class)->publish($this->finance, $rule);
         }
-        $token = app(ReferralCapture::class)->capture($this->partner->referral_code, null, $buyer->id);
-        app(CartManager::class)->setQuantity($buyer, $variant->id, 1);
+        $token = app(ReferralCapture::class)->capture($referralPartner->referral_code, null, $buyer->id);
+        app(CartManager::class)->setQuantity($buyer, $variant->id, $quantity);
         $quote = app(CheckoutQuote::class)->calculate(app(CartManager::class)->current($buyer));
         $order = app(PlaceOrder::class)->handle($buyer, ['recipient' => 'Buyer', 'phone' => '081234567890', 'province' => 'Jawa Barat', 'city' => 'Bandung', 'district' => 'Coblong', 'postal_code' => '40132', 'address' => 'Alamat uji 123'], $quote['fingerprint'], (string) Str::uuid(), $token);
         app(SubmitPaymentProof::class)->handle($buyer, $order, UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), (string) Str::uuid());

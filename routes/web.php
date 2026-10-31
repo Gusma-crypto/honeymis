@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CatalogManagementController;
 use App\Http\Controllers\Admin\CommissionRuleController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\Admin\MlmProgramController;
 use App\Http\Controllers\Admin\OrderManagementController;
 use App\Http\Controllers\Admin\PartnerManagementController;
 use App\Http\Controllers\Admin\PayoutManagementController;
@@ -60,6 +61,9 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function (): voi
 Route::middleware(['auth', 'verified', 'password.confirm', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('catalog', [CatalogManagementController::class, 'index'])->name('catalog.index');
     Route::post('catalog', [CatalogManagementController::class, 'store'])->name('catalog.store');
+    Route::get('catalog/export', [CatalogManagementController::class, 'export'])->name('catalog.export');
+    Route::post('catalog/import', [CatalogManagementController::class, 'import'])->name('catalog.import');
+    Route::delete('catalog/{product}', [CatalogManagementController::class, 'archive'])->name('catalog.archive');
     Route::put('catalog/{product}', [CatalogManagementController::class, 'update'])->name('catalog.update');
     Route::post('catalog/{product}/image', [CatalogManagementController::class, 'image'])->name('catalog.image');
     Route::post('categories', [CatalogManagementController::class, 'category'])->name('categories.store');
@@ -72,6 +76,7 @@ Route::middleware(['auth', 'verified', 'password.confirm', 'throttle:60,1'])->pr
 Route::get('r/{code}', [PartnerController::class, 'referral'])->name('referral.visit')->middleware('throttle:60,1');
 Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function (): void {
     Route::get('partner', [PartnerController::class, 'index'])->name('partner.dashboard');
+    Route::get('partner/network', [PartnerController::class, 'networkPage'])->name('partner.network');
     Route::post('partner', [PartnerController::class, 'store'])->name('partner.apply');
     Route::get('wallet', [WalletController::class, 'index'])->name('wallet.index');
     Route::get('payouts', [PayoutController::class, 'index'])->name('payouts.index');
@@ -81,12 +86,16 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function (): voi
 });
 Route::middleware(['auth', 'verified', 'password.confirm', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('partners', [PartnerManagementController::class, 'index'])->name('partners.index');
+    Route::post('partners', [PartnerManagementController::class, 'store'])->name('partners.store');
     Route::patch('partners/{partner}', [PartnerManagementController::class, 'update'])->name('partners.update');
+    Route::put('partners/{partner}/rank', [PartnerManagementController::class, 'rank'])->name('partners.rank');
     Route::get('commission-rules', [CommissionRuleController::class, 'index'])->name('commission-rules.index');
     Route::post('commission-rules', [CommissionRuleController::class, 'store'])->name('commission-rules.store');
     Route::post('commission-rules/{rule}/publish', [CommissionRuleController::class, 'publish'])->name('commission-rules.publish');
     Route::get('commission-rules/{rule}/preview', [CommissionRuleController::class, 'preview'])->name('commission-rules.preview');
     Route::post('commission-rules/{rule}/retire', [CommissionRuleController::class, 'retire'])->name('commission-rules.retire');
+    Route::get('mlm-settings', [MlmProgramController::class, 'index'])->name('mlm-settings.index');
+    Route::put('mlm-settings', [MlmProgramController::class, 'update'])->name('mlm-settings.update');
     Route::get('payouts', [PayoutManagementController::class, 'index'])->name('payouts.index');
     Route::post('payouts/{payout}', [PayoutManagementController::class, 'update'])->name('payouts.update');
     Route::get('refunds', [RefundController::class, 'index'])->name('refunds.index');

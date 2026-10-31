@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { ChartNoAxesCombined as MenuIcon } from 'lucide-react';
 import { DataTable, DetailFields, RecordDialog } from '@/components/data-list';
 import { Head, useForm } from '@inertiajs/react';
 import { Field, inputClass, money, Errors } from '@/components/commerce-ui';
@@ -37,7 +39,9 @@ export default function Reports({
         <>
             <Head title="Laporan" />
             <main className="grid gap-6 p-6">
-                <h1 className="text-3xl font-bold">Laporan penjualan</h1>
+                <MenuTitle icon={MenuIcon} tone="green">
+                    Laporan penjualan
+                </MenuTitle>
                 <form
                     className="flex flex-wrap items-end gap-4"
                     onSubmit={(e) => {
@@ -64,7 +68,7 @@ export default function Reports({
                     <Button>Terapkan</Button>
                     <Errors errors={f.errors} />
                 </form>
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="honey-report-stats grid gap-4 sm:grid-cols-3">
                     {[
                         ['Pesanan', r.orders],
                         ['Dibayar', r.paidOrders],

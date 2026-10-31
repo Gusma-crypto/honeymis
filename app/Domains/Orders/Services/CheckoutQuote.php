@@ -7,6 +7,8 @@ use App\Domains\Catalog\Models\Product;
 use App\Domains\Catalog\Models\ProductVariant;
 use App\Domains\Inventory\Models\InventoryBalance;
 use App\Domains\Orders\Models\Cart;
+use App\Domains\Orders\Models\Customer;
+use App\Domains\Partners\Models\Partner;
 use App\Domains\Shared\ValueObjects\Idr;
 use Illuminate\Validation\ValidationException;
 
@@ -45,6 +47,7 @@ class CheckoutQuote
         $lines = [];
         $subtotal = new Idr(0);
         $discount = new Idr(0);
+        $member = Partner::whereIn('user_id', Customer::select('user_id')->whereKey($cart->customer_id))->where('status', 'active')->when($lock, fn ($query) => $query->lockForUpdate())->first(['id']);
         foreach ($items as $item) {
             $variant = $variants->get($item->variant_id);
             if ($variant === null || $variant->status !== 'active' || $variant->product->status !== 'active' || $variant->product->category->status !== 'active') {
@@ -55,7 +58,10 @@ class CheckoutQuote
             }
             $weight += max(1, $variant->product->weight_g) * $item->quantity;
             $lineSubtotal = (new Idr($variant->price))->multiply($item->quantity);
-            $lineDiscount = (new Idr($variant->discount_amount))->multiply($item->quantity);
+            $unitDiscount = $member !== null && $variant->member_price !== null
+                ? max($variant->discount_amount, $variant->price - $variant->member_price)
+                : $variant->discount_amount;
+            $lineDiscount = (new Idr($unitDiscount))->multiply($item->quantity);
             $subtotal = $subtotal->add($lineSubtotal);
             $discount = $discount->add($lineDiscount);
             $lines[] = ['variant_id' => $variant->id, 'sku' => $variant->sku, 'name' => $variant->product->name, 'attributes' => $variant->attributes,

@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { Wallet as MenuIcon } from 'lucide-react';
 import { ListFilters } from '@/components/list-filters';
 import { DataTable, DetailFields, RecordDialog } from '@/components/data-list';
 import { Head, Link } from '@inertiajs/react';
@@ -23,7 +25,9 @@ export default function Wallet({
         <>
             <Head title="Dompet komisi" />
             <main className="grid gap-6 p-6">
-                <h1 className="text-3xl font-bold">Dompet komisi</h1>
+                <MenuTitle icon={MenuIcon} tone="green">
+                    Dompet komisi
+                </MenuTitle>
                 <div className="grid gap-4 sm:grid-cols-3">
                     {Object.entries(balances).map(([k, v]) => (
                         <article key={k} className="rounded-xl border p-5">

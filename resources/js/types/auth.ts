@@ -5,6 +5,7 @@ export type User = {
     whatsapp_number?: string | null;
     whatsapp_verified_at?: string | null;
     avatar?: string;
+    gender?: 'male' | 'female' | null;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     created_at: string;

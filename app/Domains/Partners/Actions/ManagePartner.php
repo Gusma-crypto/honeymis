@@ -16,6 +16,38 @@ class ManagePartner
 {
     public function __construct(private AuditWriter $audit) {}
 
+    public function addToNetwork(User $actor, User $member, string $placement, ?int $relativePartnerId): Partner
+    {
+        Gate::forUser($actor)->authorize('partners.manage');
+
+        return DB::transaction(function () use ($actor, $member, $placement, $relativePartnerId): Partner {
+            $member = User::whereKey($member->id)->lockForUpdate()->firstOrFail();
+            if (! $member->isActive() || $member->email_verified_at === null) {
+                throw ValidationException::withMessages(['email' => 'Akun harus aktif dan email sudah diverifikasi sebelum ditambahkan ke jaringan.']);
+            }
+            if (Partner::where('user_id', $member->id)->exists()) {
+                throw ValidationException::withMessages(['email' => 'Akun ini sudah menjadi mitra. Penempatan mitra lama tidak dapat diubah melalui form ini.']);
+            }
+            $relative = $placement === 'root' ? null : Partner::whereKey($relativePartnerId)->lockForUpdate()->firstOrFail();
+            $sponsorId = match ($placement) {
+                'below' => $relative->id,
+                'sibling' => $relative->sponsor_partner_id,
+                'root' => null,
+                default => throw ValidationException::withMessages(['placement' => 'Penempatan tidak valid.']),
+            };
+            $sponsor = $sponsorId === null ? null : Partner::whereKey($sponsorId)->lockForUpdate()->firstOrFail();
+            if ($sponsor !== null && ($sponsor->status !== 'active' || ! $sponsor->user->isActive())) {
+                throw ValidationException::withMessages(['placement' => 'Sponsor tujuan harus aktif. Aktifkan sponsor terlebih dahulu.']);
+            }
+            $partner = $this->apply($member, $sponsor?->referral_code);
+            $this->audit->record($actor->id, 'partner_placed_by_admin', 'partners', $partner->id, 'partner:'.$partner->id.':admin-placement', [
+                'placement' => $placement, 'relative_partner_id' => $relativePartnerId, 'sponsor_partner_id' => $sponsorId,
+            ]);
+
+            return $partner;
+        }, attempts: 3);
+    }
+
     public function apply(User $user, ?string $sponsorCode): Partner
     {
         abort_unless($user->isActive() && $user->hasVerifiedEmail(), 403);

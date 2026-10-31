@@ -1,0 +1,126 @@
+services:
+    app:
+        image: honeycommerce-local-app
+        build:
+            context: .
+            target: app
+        env_file:
+            - .env.docker
+        environment:
+            APP_BOOTSTRAP: 'true'
+        volumes:
+            - app-storage:/var/www/html/storage
+            - public-storage:/var/www/html/storage/app/public
+        depends_on:
+            mysql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - php -r "fsockopen('127.0.0.1', 9000) or exit(1);"
+            interval: 10s
+            timeout: 3s
+            retries: 10
+            start_period: 30s
+        restart: unless-stopped
+
+    web:
+        image: honeycommerce-local-web
+        build:
+            context: .
+            target: web
+        ports:
+            - '${DEMO_HTTP_BIND:-127.0.0.1}:8000:80'
+        volumes:
+            - public-storage:/var/www/html/storage/app/public:ro
+        depends_on:
+            app:
+                condition: service_healthy
+        restart: unless-stopped
+
+    worker:
+        image: honeycommerce-local-app
+        env_file:
+            - .env.docker
+        environment:
+            APP_BOOTSTRAP: 'false'
+        command:
+            - php
+            - artisan
+            - queue:work
+            - redis
+            - --sleep=3
+            - --tries=3
+            - --timeout=60
+            - --no-interaction
+        volumes:
+            - app-storage:/var/www/html/storage
+            - public-storage:/var/www/html/storage/app/public
+        depends_on:
+            app:
+                condition: service_healthy
+        restart: unless-stopped
+
+    scheduler:
+        image: honeycommerce-local-app
+        env_file:
+            - .env.docker
+        environment:
+            APP_BOOTSTRAP: 'false'
+        command:
+            - php
+            - artisan
+            - schedule:work
+            - --no-interaction
+        volumes:
+            - app-storage:/var/www/html/storage
+            - public-storage:/var/www/html/storage/app/public
+        depends_on:
+            app:
+                condition: service_healthy
+        restart: unless-stopped
+
+    mysql:
+        image: mysql:8.4
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE:-honeycommerce}
+            MYSQL_USER: ${DB_USERNAME:-honeycommerce}
+            MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.docker}
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env.docker}
+        volumes:
+            - mysql-data:/var/lib/mysql
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - mysqladmin ping --host=127.0.0.1 --user=root --password="$${MYSQL_ROOT_PASSWORD}" --silent
+            interval: 10s
+            timeout: 5s
+            retries: 12
+            start_period: 30s
+        restart: unless-stopped
+
+    redis:
+        image: redis:7-alpine
+        command:
+            - redis-server
+            - --appendonly
+            - 'yes'
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test:
+                - CMD
+                - redis-cli
+                - ping
+            interval: 10s
+            timeout: 3s
+            retries: 10
+        restart: unless-stopped
+
+volumes:
+    app-storage:
+    mysql-data:
+    public-storage:
+    redis-data:

@@ -1,4 +1,5 @@
 import { PartnerNetworkSummary } from '@/components/partner-network-summary';
+import { HoneyAdminDashboard } from '@/components/honey-admin-dashboard';
 import type { PartnerNetworkData } from '@/components/partner-network-summary';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
@@ -92,7 +93,7 @@ function Metric({
         </article>
     );
 }
-export default function Dashboard({
+function LegacyDashboard({
     admin,
     stats,
     wallet,
@@ -920,6 +921,19 @@ export default function Dashboard({
                 </div>
             </main>
         </>
+    );
+}
+
+export default function Dashboard(
+    props: Parameters<typeof LegacyDashboard>[0],
+) {
+    return props.admin !== null ? (
+        <HoneyAdminDashboard
+            admin={props.admin}
+            network={props.networkSummary}
+        />
+    ) : (
+        <LegacyDashboard {...props} />
     );
 }
 

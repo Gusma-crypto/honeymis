@@ -12,3 +12,4 @@ Schedule::command('honey:expire-orders')->everyMinute()->withoutOverlapping();
 
 Schedule::command('honey:process-finance')->everyMinute()->withoutOverlapping();
 Schedule::command('honey:reconcile-finance')->daily()->withoutOverlapping();
+Schedule::command('honey:recalculate-ranks')->hourly()->withoutOverlapping();

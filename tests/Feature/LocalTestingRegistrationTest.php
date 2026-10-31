@@ -23,6 +23,9 @@ class LocalTestingRegistrationTest extends TestCase
     private function enableLocalMode(): void
     {
         config(['auth.local_testing_bypass' => true, 'app.url' => 'http://127.0.0.1:8000']);
+        if (config('database.default') === 'sqlite') {
+            config(['database.connections.sqlite.host' => '127.0.0.1']);
+        }
         $this->seed(RolePermissionSeeder::class);
     }
 
@@ -100,7 +103,7 @@ class LocalTestingRegistrationTest extends TestCase
         if ($context === 'url') {
             config(['app.url' => 'https://shop.example.test']);
         } elseif ($context === 'database') {
-            config(['database.connections.mysql.host' => 'db.example.test']);
+            config(['database.connections.'.config('database.default').'.host' => 'db.example.test']);
         } elseif ($context === 'client') {
             $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10']);
         }

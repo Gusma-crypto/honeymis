@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { ShoppingCart as MenuIcon } from 'lucide-react';
 import { ListFilters } from '@/components/list-filters';
 import {
     DataTable,
@@ -25,7 +27,9 @@ export default function Orders({ orders }: { orders: Paginated<Order> }) {
             <Head title="Pesanan" />
             <main className="grid gap-5 p-4 sm:p-6">
                 <header>
-                    <h1 className="text-2xl font-semibold">Daftar pesanan</h1>
+                    <MenuTitle icon={MenuIcon} tone="blue">
+                        Daftar pesanan
+                    </MenuTitle>
                     <p className="mt-1 text-sm text-muted-foreground">
                         Buka detail untuk pembayaran, pengiriman, dan perubahan
                         status.

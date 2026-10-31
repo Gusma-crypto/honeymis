@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { Settings as MenuIcon } from 'lucide-react';
 import { ShippingSettingsForm } from '@/components/shipping-settings-form';
 import type { ShippingConfiguration } from '@/components/shipping-settings-form';
 import { DataTable, DetailFields, RecordDialog } from '@/components/data-list';
@@ -15,7 +17,9 @@ export default function Settings({
         <>
             <Head title="Pengaturan toko" />
             <main className="grid gap-5 p-6">
-                <h1 className="text-3xl font-bold">Konfigurasi toko</h1>
+                <MenuTitle icon={MenuIcon} tone="blue">
+                    Konfigurasi toko
+                </MenuTitle>
                 <p>
                     Ongkir manual dan API dikelola melalui pengaturan di bawah.
                     Tarif komisi tetap memakai halaman aturan komisi dengan

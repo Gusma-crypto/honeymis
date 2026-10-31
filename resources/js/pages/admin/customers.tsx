@@ -1,3 +1,5 @@
+import { MenuTitle } from '@/components/menu-title';
+import { Users as MenuIcon } from 'lucide-react';
 import { ListFilters } from '@/components/list-filters';
 import { CustomerEditor } from '@/components/customer-editor';
 import {
@@ -25,7 +27,9 @@ export default function Customers({
         <>
             <Head title="Pelanggan" />
             <main className="grid gap-5 p-6">
-                <h1 className="text-3xl font-bold">Pelanggan</h1>
+                <MenuTitle icon={MenuIcon} tone="violet">
+                    Pelanggan
+                </MenuTitle>
                 <div className="flex justify-end">
                     <RecordDialog
                         kind="add"

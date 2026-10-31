@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $beneficiary_partner_id
  * @property int $rule_id
  * @property int $level
+ * @property string $commission_type
  * @property int $base_amount
  * @property int $amount
  * @property int $reversed_amount
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $unique_key
  * @property OrderItem $item
  */
-#[Fillable(['order_item_id', 'beneficiary_partner_id', 'rule_id', 'level', 'base_amount', 'amount', 'reversed_amount', 'offset_amount', 'status', 'eligible_at', 'available_at', 'unique_key'])]
+#[Fillable(['order_item_id', 'beneficiary_partner_id', 'rule_id', 'level', 'commission_type', 'base_amount', 'amount', 'reversed_amount', 'offset_amount', 'status', 'eligible_at', 'available_at', 'unique_key'])]
 class CommissionEntry extends Model
 {
     /** @use HasFactory<CommissionEntryFactory> */
