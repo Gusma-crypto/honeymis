@@ -40,7 +40,9 @@ RUN composer install \
         --prefer-dist \
         --optimize-autoloader \
     && npm ci \
-    && APP_KEY="$(php -r 'echo "base64:".base64_encode(random_bytes(32));')" npm run build \
+    && export APP_KEY="$(php -r 'echo "base64:".base64_encode(random_bytes(32));')" \
+    && php artisan wayfinder:generate --with-form --no-interaction \
+    && npm run build \
     && rm -rf node_modules
 
 FROM php-base AS app
