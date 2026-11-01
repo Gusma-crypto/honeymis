@@ -14,6 +14,7 @@ use App\Domains\Orders\Models\Payment;
 use App\Domains\Orders\Services\CartManager;
 use App\Domains\Orders\Services\CheckoutQuote;
 use App\Domains\Orders\Services\ShippingQuotes;
+use App\Domains\Partners\Services\MarketingAttribution;
 use App\Domains\Shared\Services\AuditWriter;
 use App\Domains\Shared\Services\CommerceNotifier;
 use App\Domains\Shared\ValueObjects\Idr;
@@ -24,7 +25,7 @@ use Illuminate\Validation\ValidationException;
 
 class PlaceOrder
 {
-    public function __construct(private CartManager $carts, private CheckoutQuote $quotes, private AuditWriter $audit, private PaymentAdapter $payments, private CheckoutAttribution $attribution, private ShippingQuotes $shippingQuotes) {}
+    public function __construct(private CartManager $carts, private CheckoutQuote $quotes, private AuditWriter $audit, private PaymentAdapter $payments, private CheckoutAttribution $attribution, private ShippingQuotes $shippingQuotes, private MarketingAttribution $marketing) {}
 
     /** @param array{recipient: string, phone: string, province: string, city: string, district: string, postal_code: string, address: string} $address */
     public function handle(User $user, array $address, string $quoteFingerprint, string $key, ?string $referralToken = null, ?string $shippingQuoteToken = null): Order
@@ -65,6 +66,7 @@ class PlaceOrder
             $customer->update(['name' => $user->name, 'email' => $user->email, 'phone' => $address['phone']]);
             $order = Order::create([
                 'order_number' => 'HC-'.now()->format('Ymd').'-'.Str::upper((string) Str::ulid()), 'customer_id' => $customer->id,
+                'marketing_visit_id' => $this->marketing->orderVisitId($user),
                 'idempotency_key' => $key, 'request_fingerprint' => $fingerprint, 'cart_id' => $cart->id,
                 'shipping_address_snapshot' => $address, 'shipping_snapshot' => $quote['shipping'], 'subtotal' => $quote['subtotal'], 'discount_total' => $quote['discount_total'],
                 'shipping_total' => $quote['shipping_total'], 'tax_total' => 0, 'grand_total' => $quote['grand_total'], 'currency' => 'IDR',

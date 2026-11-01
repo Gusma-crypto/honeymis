@@ -12,13 +12,16 @@ use App\Domains\Orders\Actions\SubmitPaymentProof;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\Services\CartManager;
 use App\Domains\Orders\Services\CheckoutQuote;
+use App\Domains\Partners\Actions\ManageRankOverride;
 use App\Domains\Partners\Models\Partner;
+use App\Domains\Partners\Services\PartnerRankService;
 use App\Domains\Partners\Services\ReferralCapture;
 use App\Domains\Shared\Enums\SystemRole;
 use App\Domains\Shared\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class LocalDemoSeeder extends Seeder
@@ -33,7 +36,7 @@ class LocalDemoSeeder extends Seeder
         }
 
         $this->call(RolePermissionSeeder::class);
-        $this->seedUser('Demo Super Admin', 'admin@honey-demo.test', SystemRole::SuperAdmin, $password);
+        $admin = $this->seedUser('Demo Super Admin', 'admin@honey-demo.test', SystemRole::SuperAdmin, $password);
         $finance = $this->seedUser('Demo Finance', 'finance@honey-demo.test', SystemRole::Finance, $password);
         $partnerUser = $this->seedUser('Demo Mitra', 'partner@honey-demo.test', SystemRole::Partner, $password);
         $buyer = $this->seedUser('Demo Pembeli', 'customer@honey-demo.test', SystemRole::Customer, $password);
@@ -42,12 +45,13 @@ class LocalDemoSeeder extends Seeder
             ['user_id' => $partnerUser->id],
             ['referral_code' => 'DEMO-PARTNER', 'status' => 'active'],
         );
+        $this->seedNetwork($admin, $partner, $password);
 
         $this->call(HoneyDemoCatalogSeeder::class);
         $this->seedCommissionRule($finance);
         $this->seedOrder($buyer, $partner, $finance, 'DEMO-MADU-HUTAN-250', 'local-demo-order:paid:v1', true);
         $this->seedOrder($buyer, $partner, $finance, 'DEMO-MADU-RANDU-250', 'local-demo-order:cancelled:v1', false);
-
+        app(PartnerRankService::class)->recalculateCurrentMonth();
     }
 
     private function ensureLocalTarget(): void
@@ -63,9 +67,53 @@ class LocalDemoSeeder extends Seeder
             default => false,
         };
 
-        if (! app()->environment(['local', 'testing']) || ! in_array($host, ['127.0.0.1', 'localhost', '::1'], true) || ! $isLocalDatabase) {
+        $isAllowedHost = in_array($host, ['127.0.0.1', 'localhost', '::1'], true)
+            || (config('commerce.demo_allow_remote') && is_string($host) && $host !== '');
+
+        if (! app()->environment(['local', 'testing']) || ! $isAllowedHost || ! $isLocalDatabase) {
             throw new RuntimeException('Demo accounts and transactions may only be seeded into a local Docker or test database.');
         }
+    }
+
+    private function seedNetwork(User $admin, Partner $root, string $password): void
+    {
+        $root->update(['approved_at' => $root->approved_at ?? now()]);
+        $this->seedRank($admin, $root, 'Platinum');
+
+        $partners = [1 => $root];
+        $members = [
+            2 => ['sponsor' => 1, 'rank' => 'Gold'],
+            3 => ['sponsor' => 2, 'rank' => 'Silver'],
+            4 => ['sponsor' => 3, 'rank' => 'Bronze'],
+            5 => ['sponsor' => 4, 'rank' => 'Member'],
+            6 => ['sponsor' => 5, 'rank' => 'Member'],
+            7 => ['sponsor' => 1, 'rank' => 'Silver'],
+            8 => ['sponsor' => 7, 'rank' => 'Bronze'],
+            9 => ['sponsor' => 7, 'rank' => 'Member'],
+            10 => ['sponsor' => 2, 'rank' => 'Bronze'],
+        ];
+
+        foreach ($members as $number => $member) {
+            $sponsor = $partners[$member['sponsor']] ?? throw new RuntimeException('Sponsor demo harus dibuat sebelum downline.');
+            $user = $this->seedUser('Demo Mitra '.$number, 'partner'.$number.'@honey-demo.test', SystemRole::Partner, $password);
+            $partner = Partner::firstOrCreate(['user_id' => $user->id], [
+                'referral_code' => 'DEMO-PARTNER-'.$number,
+                'sponsor_partner_id' => $sponsor->id,
+                'status' => 'active',
+                'approved_at' => now(),
+            ]);
+            $partners[$number] = $partner;
+            $this->seedRank($admin, $partner, $member['rank']);
+        }
+    }
+
+    private function seedRank(User $admin, Partner $partner, string $rank): void
+    {
+        if (DB::table('partner_rank_overrides')->where('partner_id', $partner->id)->exists()) {
+            return;
+        }
+
+        app(ManageRankOverride::class)->handle($admin, $partner, $rank, 'Peringkat simulasi demo; bukan hasil omzet atau pencapaian riil.');
     }
 
     private function seedUser(string $name, string $email, SystemRole $role, string $password): User

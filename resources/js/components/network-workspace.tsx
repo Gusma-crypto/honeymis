@@ -48,7 +48,12 @@ export function NetworkWorkspace({
     addRoot: ReactNode;
     actions: (node: HierarchyNode) => ReactNode;
     ranks?: Record<number, string>;
-    ownSummary?: {rank: string; personal_sales: number; team_sales: number; commissions: number};
+    ownSummary?: {
+        rank: string;
+        personal_sales: number;
+        team_sales: number;
+        commissions: number;
+    };
 }) {
     const [tab, setTab] = useState('Struktur Jaringan');
     const [rootId, setRootId] = useState(data.root_id);
@@ -95,7 +100,9 @@ export function NetworkWorkspace({
     const scope = branch(rootId);
     const members = scope.filter((node) => node.id !== 0);
     const selected = byId.get(selectedId) ?? root;
-    const selectedStats = performance?.[selected.id] ?? (selected.id === data.root_id ? ownSummary : undefined);
+    const selectedStats =
+        performance?.[selected.id] ??
+        (selected.id === data.root_id ? ownSummary : undefined);
     const selectedDownline = Math.max(0, branch(selected.id).length - 1);
     const layout = useMemo(
         () => layoutNetworkCards(data.nodes, rootId, depth),
@@ -106,13 +113,17 @@ export function NetworkWorkspace({
               (sum, node) => sum + (performance[node.id]?.personal_sales ?? 0),
               0,
           )
-        : rootId === data.root_id ? ownSummary?.team_sales ?? null : null;
+        : rootId === data.root_id
+          ? (ownSummary?.team_sales ?? null)
+          : null;
     const totalCommission = performance
         ? members.reduce(
               (sum, node) => sum + (performance[node.id]?.commissions ?? 0),
               0,
           )
-        : rootId === data.root_id ? ownSummary?.commissions ?? null : null;
+        : rootId === data.root_id
+          ? (ownSummary?.commissions ?? null)
+          : null;
     const top = members
         .filter((node) => node.id !== rootId)
         .sort(
@@ -499,7 +510,9 @@ export function NetworkWorkspace({
                             <header>
                                 <h2>
                                     <Trophy size={23} />
-                                    {performance ? 'Top Downline (Berdasarkan Omzet)' : 'Downline Jaringan Anda'}
+                                    {performance
+                                        ? 'Top Downline (Berdasarkan Omzet)'
+                                        : 'Downline Jaringan Anda'}
                                 </h2>
                                 <small>Bulan Ini</small>
                             </header>
@@ -564,7 +577,9 @@ export function NetworkWorkspace({
                                                         className={`network-rank rank-${performance?.[node.id]?.rank ?? ranks[node.id] ?? 'Member'}`}
                                                     >
                                                         {performance?.[node.id]
-                                                            ?.rank ?? ranks[node.id] ?? 'Member'}
+                                                            ?.rank ??
+                                                            ranks[node.id] ??
+                                                            'Member'}
                                                     </span>
                                                 </td>
                                                 <td>
@@ -640,7 +655,9 @@ export function NetworkWorkspace({
                                 >
                                     {selected.id === 0
                                         ? 'Perusahaan'
-                                        : (selectedStats?.rank ?? ranks[selected.id] ?? 'Member')}
+                                        : (selectedStats?.rank ??
+                                          ranks[selected.id] ??
+                                          'Member')}
                                 </span>
                             </div>
                             <dl>

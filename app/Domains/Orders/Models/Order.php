@@ -41,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property Collection<int, Payment> $payments
  * @property Collection<int, Shipment> $shipments
  */
-#[Fillable(['commission_checked_at', 'return_window_days', 'fraud_hold', 'customer_id', 'order_number', 'idempotency_key', 'request_fingerprint', 'cart_id', 'partner_referral_id', 'commission_rule_id', 'referral_snapshot', 'rule_snapshot', 'shipping_address_snapshot', 'shipping_snapshot', 'subtotal', 'discount_total', 'shipping_total', 'tax_total', 'grand_total', 'currency', 'status', 'placed_at', 'expires_at', 'delivered_at'])]
+#[Fillable(['commission_checked_at', 'return_window_days', 'fraud_hold', 'customer_id', 'order_number', 'idempotency_key', 'request_fingerprint', 'cart_id', 'partner_referral_id', 'commission_rule_id', 'referral_snapshot', 'rule_snapshot', 'shipping_address_snapshot', 'shipping_snapshot', 'subtotal', 'discount_total', 'shipping_total', 'tax_total', 'grand_total', 'currency', 'status', 'placed_at', 'expires_at', 'delivered_at', 'marketing_visit_id'])]
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */

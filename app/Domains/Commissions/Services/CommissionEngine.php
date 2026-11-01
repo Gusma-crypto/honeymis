@@ -18,7 +18,7 @@ use RuntimeException;
 
 class CommissionEngine
 {
-    public function __construct(private DirectCommissionCalculator $calculator, private PartnerLedger $ledger, private AuditWriter $audit, private PartnerRankService $ranks) {}
+    public function __construct(private DirectCommissionCalculator $calculator, private PartnerLedger $ledger, private AuditWriter $audit, private PartnerRankService $ranks, private GenerationCommissionCalculator $generations) {}
 
     public function accrue(int $orderId): void
     {
@@ -77,19 +77,18 @@ class CommissionEngine
 
                 $rates = $item->commission_snapshot['generation_rates'] ?? [];
                 $firstOrderRate = (int) ($item->commission_snapshot['first_order_referral_bps'] ?? 0);
+                $generationAmounts = $this->generations->calculate($base->amount, array_values(array_map('intval', $rates)), $firstOrderRate, (bool) $isFirstOrder);
                 foreach ($chain as $generation) {
-                    $rate = $generation['level'] === 1 && $isFirstOrder
-                        ? $firstOrderRate
-                        : (int) ($rates[$generation['level'] - 1] ?? 0);
+                    $calculated = $generationAmounts[$generation['level']];
                     $recipient = $partners->get($generation['partner_id']);
-                    if ($rate < 1 || ! $this->isEligibleRecipient($recipient, $order->customer->user_id)) {
+                    if ($calculated['amount'] < 1 || ! $this->isEligibleRecipient($recipient, $order->customer->user_id)) {
                         continue;
                     }
                     $commissionAmounts[] = [
                         'partner_id' => $generation['partner_id'],
                         'level' => $generation['level'],
-                        'type' => $generation['level'] === 1 && $isFirstOrder ? 'referral' : 'network',
-                        'amount' => (new Idr($base->amount))->basisPoints($rate)->amount,
+                        'type' => $calculated['type'],
+                        'amount' => $calculated['amount'],
                     ];
                 }
 

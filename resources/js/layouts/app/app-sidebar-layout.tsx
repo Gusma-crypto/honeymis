@@ -33,8 +33,15 @@ export default function AppSidebarLayout({
             </HoneyAdminLayout>
         );
     }
-    if (page.props.auth.permissions.includes('referrals.view-own') || page.component.startsWith('partner/')) {
-        return <HoneyAdminLayout portal="partner" breadcrumbs={breadcrumbs}>{children}</HoneyAdminLayout>;
+    if (
+        page.props.auth.permissions.includes('referrals.view-own') ||
+        page.component.startsWith('partner/')
+    ) {
+        return (
+            <HoneyAdminLayout portal="partner" breadcrumbs={breadcrumbs}>
+                {children}
+            </HoneyAdminLayout>
+        );
     }
     return (
         <AppShell variant="sidebar">

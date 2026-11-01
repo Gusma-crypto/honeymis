@@ -21,6 +21,13 @@ export default function Wallet({
         created_at: string;
     }>;
 }) {
+    const bucketLabels: Record<string, string> = {
+        pending: 'Komisi Menunggu',
+        available: 'Komisi Tersedia',
+        reserved: 'Sedang Dicairkan',
+        paid_out: 'Sudah Dicairkan',
+        receivable: 'Penyesuaian Refund',
+    };
     return (
         <>
             <Head title="Dompet komisi" />
@@ -30,8 +37,11 @@ export default function Wallet({
                 </MenuTitle>
                 <div className="grid gap-4 sm:grid-cols-3">
                     {Object.entries(balances).map(([k, v]) => (
-                        <article key={k} className="rounded-xl border p-5">
-                            <p>{k}</p>
+                        <article
+                            key={k}
+                            className="partner-balance-card rounded-xl border p-5"
+                        >
+                            <p>{bucketLabels[k] ?? k}</p>
                             <strong className="text-2xl">{money(v)}</strong>
                         </article>
                     ))}

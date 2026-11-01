@@ -1,6 +1,12 @@
 import { MenuTitle } from '@/components/menu-title';
-import { Network as MenuIcon } from 'lucide-react';
-import { PartnerNetworkSummary } from '@/components/partner-network-summary';
+import {
+    Network as MenuIcon,
+    Users,
+    ShoppingCart,
+    Coins,
+    Trophy,
+    ArrowRight,
+} from 'lucide-react';
 import type { PartnerNetworkData } from '@/components/partner-network-summary';
 import {
     DataTable,
@@ -8,10 +14,10 @@ import {
     RecordDialog,
     StatusBadge,
 } from '@/components/data-list';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Errors, Field, inputClass, money } from '@/components/commerce-ui';
 import { Button } from '@/components/ui/button';
-import { apply } from '@/routes/partner';
+import { apply, network as ownNetwork } from '@/routes/partner';
 import { index as wallet } from '@/routes/wallet';
 import { index as payouts } from '@/routes/payouts';
 type Balances = Record<string, number>;
@@ -64,15 +70,111 @@ export default function PartnerDashboard({
     }[];
 }) {
     const form = useForm({ sponsor_code: '', accept_terms: false, gender: '' });
+    const { auth } = usePage().props;
+    const balanceLabels: Record<string, string> = {
+        pending: 'Komisi Menunggu',
+        available: 'Komisi Tersedia',
+        reserved: 'Sedang Dicairkan',
+        paid_out: 'Sudah Dicairkan',
+        receivable: 'Penyesuaian Refund',
+    };
     return (
         <>
             <Head title="Portal mitra" />
-            <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
-                <MenuTitle icon={MenuIcon} tone="blue">
-                    Portal mitra
-                </MenuTitle>
+            <main className="partner-dashboard product-workspace">
+                <header className="product-heading">
+                    <div>
+                        <MenuTitle icon={MenuIcon} tone="amber">
+                            Dashboard Mitra
+                        </MenuTitle>
+                        <p>
+                            Selamat datang, {auth.user.name}. Pantau penjualan,
+                            komisi, dan pertumbuhan jaringan Anda.
+                        </p>
+                    </div>
+                    {monthlyRank && (
+                        <span
+                            className={`partner-current-rank network-rank rank-${monthlyRank.rank}`}
+                        >
+                            <Trophy />
+                            {monthlyRank.rank}
+                        </span>
+                    )}
+                </header>
+                {partner && (
+                    <section
+                        className="product-kpis"
+                        aria-label="Ringkasan mitra"
+                    >
+                        {[
+                            {
+                                title: 'Omzet Pribadi',
+                                value: money(monthlyRank?.personal_sales ?? 0),
+                                icon: ShoppingCart,
+                                tone: 'blue',
+                                detail: 'Penjualan valid bulan ini',
+                            },
+                            {
+                                title: 'Omzet Tim',
+                                value: money(monthlyRank?.team_sales ?? 0),
+                                icon: Users,
+                                tone: 'green',
+                                detail: 'Penjualan jaringan downline',
+                            },
+                            {
+                                title: 'Total Downline',
+                                value: Math.max(
+                                    0,
+                                    (networkSummary?.nodes.length ?? 1) - 1,
+                                ).toLocaleString('id-ID'),
+                                icon: MenuIcon,
+                                tone: 'gold',
+                                detail: `${networkSummary?.direct_count ?? 0} mitra langsung`,
+                            },
+                            {
+                                title: 'Komisi Tersedia',
+                                value: money(balances?.available ?? 0),
+                                icon: Coins,
+                                tone: 'pink',
+                                detail: 'Lihat kelayakan di menu pencairan',
+                            },
+                        ].map(({ title, value, icon: Icon, tone, detail }) => (
+                            <article
+                                key={title}
+                                className={`product-kpi ${tone}`}
+                            >
+                                <span className="product-kpi-icon">
+                                    <Icon />
+                                </span>
+                                <div>
+                                    <h2>{title}</h2>
+                                    <strong className="partner-money-value">
+                                        {value}
+                                    </strong>
+                                    <p>{detail}</p>
+                                </div>
+                            </article>
+                        ))}
+                    </section>
+                )}
                 {networkSummary && (
-                    <PartnerNetworkSummary data={networkSummary} />
+                    <section className="honey-panel partner-network-link">
+                        <MenuIcon />
+                        <div>
+                            <h2>Jaringan & Downline Saya</h2>
+                            <p>
+                                Telusuri struktur, generasi, peringkat, dan
+                                perkembangan downline Anda.
+                            </p>
+                        </div>
+                        <Link
+                            className="product-primary"
+                            href={ownNetwork.url()}
+                        >
+                            Lihat Jaringan
+                            <ArrowRight />
+                        </Link>
+                    </section>
                 )}
                 <p>
                     Komisi hanya berasal dari penjualan produk yang valid,
@@ -134,9 +236,13 @@ export default function PartnerDashboard({
                     </form>
                 ) : (
                     <>
-                        <section className="grid gap-3 rounded-xl border p-5">
+                        <section
+                            id="referral"
+                            className="partner-referral-card grid scroll-mt-24 gap-3 rounded-xl border p-5"
+                        >
                             <h2 className="text-xl font-semibold">
-                                Status: {partner.status}
+                                Status Kemitraan:{' '}
+                                <StatusBadge status={partner.status} />
                             </h2>
                             <p>
                                 Kode referral:{' '}
@@ -154,7 +260,10 @@ export default function PartnerDashboard({
                             )}
                             <p>{attributedOrders} pesanan teratribusi</p>
                             {monthlyRank && (
-                                <section className="grid gap-3 rounded-lg border p-4">
+                                <section
+                                    id="rank-targets"
+                                    className="partner-rank-progress grid scroll-mt-24 gap-3 rounded-lg border p-4"
+                                >
                                     <h3 className="font-semibold">
                                         Peringkat bulan ini: {monthlyRank.rank}
                                     </h3>
@@ -215,10 +324,10 @@ export default function PartnerDashboard({
                             {Object.entries(balances ?? {}).map(
                                 ([label, value]) => (
                                     <article
-                                        className="rounded-xl border p-5"
+                                        className="partner-balance-card rounded-xl border p-5"
                                         key={label}
                                     >
-                                        <p>{label}</p>
+                                        <p>{balanceLabels[label] ?? label}</p>
                                         <p className="text-2xl font-bold">
                                             {money(value)}
                                         </p>

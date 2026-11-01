@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\CatalogManagementController;
+use App\Http\Controllers\Admin\CommissionDashboardController;
 use App\Http\Controllers\Admin\CommissionRuleController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\Admin\MarketingController;
 use App\Http\Controllers\Admin\MlmProgramController;
 use App\Http\Controllers\Admin\OrderManagementController;
 use App\Http\Controllers\Admin\PartnerManagementController;
@@ -71,9 +73,12 @@ Route::middleware(['auth', 'verified', 'password.confirm', 'throttle:60,1'])->pr
     Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
     Route::post('inventory/{variant}', [InventoryController::class, 'update'])->name('inventory.update');
     Route::get('orders', [OrderManagementController::class, 'index'])->name('orders.index');
+    Route::get('orders/export', [OrderManagementController::class, 'export'])->name('orders.export');
+    Route::post('orders/import-tracking', [OrderManagementController::class, 'importTracking'])->name('orders.import-tracking');
 });
 
 Route::get('r/{code}', [PartnerController::class, 'referral'])->name('referral.visit')->middleware('throttle:60,1');
+Route::get('m/{code}', [MarketingController::class, 'visit'])->name('marketing.visit')->middleware('throttle:60,1');
 Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function (): void {
     Route::get('partner', [PartnerController::class, 'index'])->name('partner.dashboard');
     Route::get('partner/network', [PartnerController::class, 'networkPage'])->name('partner.network');
@@ -90,6 +95,15 @@ Route::middleware(['auth', 'verified', 'password.confirm', 'throttle:60,1'])->pr
     Route::patch('partners/{partner}', [PartnerManagementController::class, 'update'])->name('partners.update');
     Route::put('partners/{partner}/rank', [PartnerManagementController::class, 'rank'])->name('partners.rank');
     Route::get('commission-rules', [CommissionRuleController::class, 'index'])->name('commission-rules.index');
+    Route::get('commissions', [CommissionDashboardController::class, 'index'])->name('commissions.index');
+    Route::get('marketing', [MarketingController::class, 'index'])->name('marketing.index');
+    Route::post('marketing/campaigns', [MarketingController::class, 'campaign'])->name('marketing.campaigns.store');
+    Route::put('marketing/campaigns/{campaign}', [MarketingController::class, 'campaign'])->name('marketing.campaigns.update');
+    Route::post('marketing/assets', [MarketingController::class, 'assetUpload'])->name('marketing.assets.store');
+    Route::get('marketing/assets/{asset}', [MarketingController::class, 'asset'])->name('marketing.assets.show');
+    Route::get('marketing/demo/{kind}', [MarketingController::class, 'demoAsset'])->name('marketing.demo');
+    Route::get('marketing/qr', [MarketingController::class, 'qr'])->name('marketing.qr');
+    Route::post('marketing/broadcast', [MarketingController::class, 'draft'])->name('marketing.broadcast');
     Route::post('commission-rules', [CommissionRuleController::class, 'store'])->name('commission-rules.store');
     Route::post('commission-rules/{rule}/publish', [CommissionRuleController::class, 'publish'])->name('commission-rules.publish');
     Route::get('commission-rules/{rule}/preview', [CommissionRuleController::class, 'preview'])->name('commission-rules.preview');

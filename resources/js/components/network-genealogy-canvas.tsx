@@ -68,7 +68,8 @@ export function NetworkGenealogyCanvas({
             })}
             {layout.nodes.map((node) => {
                 const small = node.relative_level >= 2;
-                const rank = performance?.[node.id]?.rank ?? ranks[node.id] ?? 'Member';
+                const rank =
+                    performance?.[node.id]?.rank ?? ranks[node.id] ?? 'Member';
                 const left = node.x - node.card_width / 2;
                 return (
                     <g

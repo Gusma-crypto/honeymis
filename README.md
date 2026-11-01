@@ -1,8 +1,51 @@
 # HoneyCommerce
 
+## Demo Ubuntu dengan satu perintah
+
+Setelah Docker Engine, Docker Compose plugin v2, OpenSSL, dan kode proyek tersedia pada Ubuntu:
+
+```bash
+sh deploy.sh --url http://IP_SERVER:8000
+```
+
+Ganti `IP_SERVER` dengan IP Ubuntu. Untuk demo pada komputer sendiri cukup `sh deploy.sh`. Script membuat `.env.docker` dengan permission 600, key aplikasi, password MySQL/root yang berbeda, dan password akun demo secara acak. Setelah itu script membangun backend/frontend, menunggu database, menghentikan aplikasi lama, menjalankan migration dan seed melalui startup app, lalu menjalankan web, worker, scheduler, pemeriksaan kesehatan, dan rekonsiliasi finance. Docker tidak dipasang otomatis oleh script.
+
+Untuk melihat password bersama akun demo:
+
+```bash
+grep '^DEMO_PASSWORD=' .env.docker
+```
+
+Admin: `admin@honey-demo.test`; finance: `finance@honey-demo.test`; pembeli: `customer@honey-demo.test`. Mitra utama memakai `partner@honey-demo.test`, sembilan mitra lain memakai `partner2@honey-demo.test` sampai `partner10@honey-demo.test`. Semua akun sudah terverifikasi.
+
+| Mitra     | Sponsor  | Kedalaman dari mitra utama | Rank simulasi |
+| --------- | -------- | -------------------------- | ------------- |
+| partner   | —        | 0                          | Platinum      |
+| partner2  | partner  | 1                          | Gold          |
+| partner3  | partner2 | 2                          | Silver        |
+| partner4  | partner3 | 3                          | Bronze        |
+| partner5  | partner4 | 4                          | Member        |
+| partner6  | partner5 | 5                          | Member        |
+| partner7  | partner  | 1                          | Silver        |
+| partner8  | partner7 | 2                          | Bronze        |
+| partner9  | partner7 | 2                          | Member        |
+| partner10 | partner2 | 2                          | Bronze        |
+
+Rank dipasang melalui override yang diaudit untuk simulasi, bukan klaim pencapaian omzet. Katalog, gambar, order pembayaran simulasi, dan komisi tertunda juga disiapkan. Seeder dapat dijalankan ulang tanpa menggandakan akun/order atau mengganti password, sponsor, dan override rank yang sudah ada.
+
+Untuk update fitur dari repository Git pada branch aktif:
+
+```bash
+sh deploy.sh --update
+```
+
+Script menolak perubahan kode yang belum disimpan ke commit dan hanya melakukan `git pull --ff-only`. Jika kode diperbarui melalui upload, jalankan `sh deploy.sh` kembali. Keduanya membangun ulang frontend/backend dan menerapkan migration baru, mempertahankan `.env.docker`, key, dan volume data. Ada jeda layanan saat migration dan restart; script tidak menghapus volume. Jika build gagal, aplikasi lama belum dihentikan. Jika startup gagal, script menampilkan log untuk diperbaiki lalu dijalankan ulang.
+
+Script ini khusus **demo** dengan `APP_ENV=local`, `APP_DEBUG=false`, dan `APP_SEED_DEMO=true`; environment produksi yang sudah ada tidak dikonversi otomatis. Pada instalasi baru script mengaktifkan `DEMO_ALLOW_REMOTE=true` dan bind `0.0.0.0:8000` agar bisa diakses melalui IP Ubuntu. Untuk `.env.docker` lama, pertahankan password database yang sudah dipakai dan isi variabel kosong secara manual; gunakan `--url` untuk mengizinkan hostname demo jarak jauh dan atur `DOCKER_HTTP_BIND=0.0.0.0` bila perlu. Key kosong pada instalasi demo lama tetap memakai key tersimpan di volume. Jangan menghapus `.env.docker` untuk memperbarui instalasi yang sudah berisi data. Batasi akses server demo ke peserta yang dituju; pengaturan HTTPS tetap dikelola di reverse proxy.
+
 ## Akun demo lokal
 
-Akun berikut dan data katalog/transaksi contoh dibuat otomatis hanya untuk Docker lokal:
+Akun berikut dan data katalog/transaksi contoh dibuat otomatis untuk Docker demo:
 
 | Peran       | Email                      |
 | ----------- | -------------------------- |

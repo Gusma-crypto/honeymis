@@ -3,6 +3,7 @@
 return [
     'use_built_assets' => (bool) env('COMMERCE_USE_BUILT_ASSETS', false),
     'demo_password' => env('DEMO_PASSWORD'),
+    'demo_allow_remote' => (bool) env('DEMO_ALLOW_REMOTE', false),
     'contact' => env('COMMERCE_CONTACT', ''),
     'shipping_flat_idr' => (int) env('COMMERCE_SHIPPING_FLAT_IDR', 20000),
     'payment_window_hours' => 24,

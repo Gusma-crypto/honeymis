@@ -34,8 +34,8 @@ import { commerceSettings } from '@/routes/admin';
 import { index as catalog } from '@/routes/admin/catalog';
 import { index as orders } from '@/routes/admin/orders';
 import { index as partners } from '@/routes/admin/partners';
-import { index as rules } from '@/routes/admin/commission-rules';
-import { index as programs } from '@/routes/admin/mlm-settings';
+import { index as commissions } from '@/routes/admin/commissions';
+import { index as marketing } from '@/routes/admin/marketing';
 import { index as customers } from '@/routes/admin/customers';
 import { index as reports } from '@/routes/admin/reports';
 import { index as payouts } from '@/routes/admin/payouts';
@@ -45,7 +45,10 @@ import { index as access } from '@/routes/admin/users';
 import { index as audit } from '@/routes/admin/audit';
 import { index as storefront } from '@/routes/catalog';
 import { edit as profile } from '@/routes/profile';
-import { dashboard as ownDashboard, network as ownNetwork } from '@/routes/partner';
+import {
+    dashboard as ownDashboard,
+    network as ownNetwork,
+} from '@/routes/partner';
 import { index as ownWallet } from '@/routes/wallet';
 import { index as ownPayouts } from '@/routes/payouts';
 import { index as ownOrders } from '@/routes/orders';
@@ -72,12 +75,16 @@ export function HoneyAdminLayout({
     children,
     breadcrumbs = [],
     portal = 'admin',
-}: PropsWithChildren<{ breadcrumbs?: BreadcrumbItem[]; portal?: 'admin' | 'partner' }>) {
+}: PropsWithChildren<{
+    breadcrumbs?: BreadcrumbItem[];
+    portal?: 'admin' | 'partner';
+}>) {
     const page = usePage();
     const { auth } = page.props;
     const admin = page.props.admin as AdminOverview | undefined;
     const isDashboard = page.component === 'dashboard';
     const isCatalog = page.component === 'admin/catalog';
+    const isOrders = page.component === 'admin/orders';
     const { isCurrentOrParentUrl } = useCurrentUrl();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [desktopCollapsed, setDesktopCollapsed] = useState(false);
@@ -123,7 +130,7 @@ export function HoneyAdminLayout({
         {
             title: 'Komisi',
             icon: Coins,
-            href: rules.url(),
+            href: commissions.url(),
             allowed: can('commission-rules.manage'),
         },
         {
@@ -135,8 +142,8 @@ export function HoneyAdminLayout({
         {
             title: 'Marketing',
             icon: ChartNoAxesCombined,
-            href: programs.url(),
-            allowed: can('commission-rules.manage'),
+            href: marketing.url(),
+            allowed: can('reports.view'),
         },
         {
             title: 'Persediaan',
@@ -181,16 +188,68 @@ export function HoneyAdminLayout({
             allowed: can('catalog.manage'),
         },
     ].filter((item) => item.allowed);
-    const navigation = portal === 'partner' ? [
-        {title: 'Dashboard Mitra', icon: LayoutDashboard, href: ownDashboard.url(), allowed: true},
-        {title: 'Produk', icon: Package, href: storefront.url(), allowed: true},
-        {title: 'Pesanan Saya', icon: ShoppingCart, href: ownOrders.url(), allowed: can('orders.view-own')},
-        {title: 'Jaringan Saya', icon: Network, href: ownNetwork.url(), allowed: can('referrals.view-own')},
-        {title: 'Komisi & Dompet', icon: Coins, href: ownWallet.url(), allowed: can('wallets.view-own')},
-        {title: 'Pencairan Komisi', icon: Wallet, href: ownPayouts.url(), allowed: can('payouts.request-own')},
-        {title: 'Profil & Keamanan', icon: Settings, href: profile.url(), allowed: true},
-    ].filter((item) => item.allowed) : adminNavigation;
-    const isNavigationActive = (href: string) => portal === 'partner' ? page.url.split('?')[0] === href : isCurrentOrParentUrl(href);
+    const navigation =
+        portal === 'partner'
+            ? [
+                  {
+                      title: 'Dashboard Mitra',
+                      icon: LayoutDashboard,
+                      href: ownDashboard.url(),
+                      allowed: true,
+                  },
+                  {
+                      title: 'Produk',
+                      icon: Package,
+                      href: storefront.url(),
+                      allowed: true,
+                  },
+                  {
+                      title: 'Pesanan Saya',
+                      icon: ShoppingCart,
+                      href: ownOrders.url(),
+                      allowed: can('orders.view-own'),
+                  },
+                  {
+                      title: 'Jaringan Saya',
+                      icon: Network,
+                      href: ownNetwork.url(),
+                      allowed: can('referrals.view-own'),
+                  },
+                  {
+                      title: 'Komisi & Dompet',
+                      icon: Coins,
+                      href: ownWallet.url(),
+                      allowed: can('wallets.view-own'),
+                  },
+                  {
+                      title: 'Pencairan Komisi',
+                      icon: Wallet,
+                      href: ownPayouts.url(),
+                      allowed: can('payouts.request-own'),
+                  },
+                  {
+                      title: 'Profil & Keamanan',
+                      icon: Settings,
+                      href: profile.url(),
+                      allowed: true,
+                  },
+              ].filter((item) => item.allowed)
+            : adminNavigation;
+    const isNavigationActive = (href: string) => {
+        if (
+            portal === 'admin' &&
+            ((href === orders.url() && page.component === 'commerce/order') ||
+                (href === commissions.url() &&
+                    page.component === 'admin/commission-rules') ||
+                (href === marketing.url() &&
+                    page.component === 'admin/mlm-settings'))
+        ) {
+            return true;
+        }
+        return portal === 'partner'
+            ? page.url.split('?')[0] === href
+            : isCurrentOrParentUrl(href);
+    };
     const searchResults = navigation.filter((item) =>
         item.title.toLowerCase().includes(search.trim().toLowerCase()),
     );
@@ -255,7 +314,9 @@ export function HoneyAdminLayout({
                         <Link
                             key={title}
                             href={href}
-                            className={isNavigationActive(href) ? 'is-active' : ''}
+                            className={
+                                isNavigationActive(href) ? 'is-active' : ''
+                            }
                             aria-current={
                                 isNavigationActive(href) ? 'page' : undefined
                             }
@@ -334,21 +395,33 @@ export function HoneyAdminLayout({
                             maxLength={100}
                             onChange={(event) => setSearch(event.target.value)}
                             onKeyDown={(event) => {
-                                if (isCatalog && event.key === 'Enter') {
+                                if (
+                                    (isCatalog || isOrders) &&
+                                    event.key === 'Enter'
+                                ) {
                                     event.preventDefault();
-                                    router.get(catalog.url(), { search });
+                                    router.get(
+                                        isCatalog
+                                            ? catalog.url()
+                                            : orders.url(),
+                                        { search },
+                                    );
                                 }
                             }}
                         />
                         {search && (
                             <div className="honey-popover honey-search-results">
-                                {isCatalog ? (
+                                {isCatalog || isOrders ? (
                                     <Link
-                                        href={catalog.url({
+                                        href={(isCatalog
+                                            ? catalog
+                                            : orders
+                                        ).url({
                                             query: { search },
                                         })}
                                     >
-                                        Cari produk: {search}
+                                        Cari {isCatalog ? 'produk' : 'pesanan'}:{' '}
+                                        {search}
                                         <ArrowRight size={15} />
                                     </Link>
                                 ) : searchResults.length ? (
@@ -423,7 +496,11 @@ export function HoneyAdminLayout({
                                 />
                                 <span>
                                     <strong>{auth.user.name}</strong>
-                                    <small>{portal === 'partner' ? 'Mitra HoneyCommerce' : 'Administrator'}</small>
+                                    <small>
+                                        {portal === 'partner'
+                                            ? 'Mitra HoneyCommerce'
+                                            : 'Administrator'}
+                                    </small>
                                 </span>
                                 <ChevronDown size={17} />
                             </button>

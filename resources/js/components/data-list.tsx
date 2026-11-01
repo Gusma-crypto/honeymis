@@ -179,6 +179,8 @@ export function RecordDialog({
     kind = 'view',
     disabled = false,
     children,
+    trigger,
+    triggerClassName,
 }: {
     title: string;
     description?: string;
@@ -186,6 +188,8 @@ export function RecordDialog({
     kind?: 'view' | 'edit' | 'add';
     disabled?: boolean;
     children: ReactNode;
+    trigger?: ReactNode;
+    triggerClassName?: string;
 }) {
     const [open, setOpen] = useState(false);
     useEffect(() => {
@@ -198,24 +202,30 @@ export function RecordDialog({
             <DialogTrigger asChild>
                 <Button
                     type="button"
+                    aria-label={label === '' || trigger ? title : undefined}
                     variant={kind === 'add' ? 'default' : 'outline'}
                     size="sm"
                     className={
-                        kind === 'view'
+                        triggerClassName ??
+                        (kind === 'view'
                             ? 'border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100 hover:text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300 dark:hover:bg-sky-900/50 dark:hover:text-sky-200'
                             : kind === 'edit'
                               ? 'border-primary/30 bg-accent/50 text-accent-foreground hover:bg-accent hover:text-accent-foreground'
-                              : undefined
+                              : undefined)
                     }
                     disabled={disabled}
                 >
-                    <Icon className="size-3.5" />
-                    {label ??
-                        (kind === 'add'
-                            ? 'Tambah'
-                            : kind === 'edit'
-                              ? 'Edit'
-                              : 'Detail')}
+                    {trigger ?? (
+                        <>
+                            <Icon className="size-3.5" />
+                            {label ??
+                                (kind === 'add'
+                                    ? 'Tambah'
+                                    : kind === 'edit'
+                                      ? 'Edit'
+                                      : 'Detail')}
+                        </>
+                    )}
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[88dvh] overflow-y-auto border-t-4 border-t-primary sm:max-w-4xl">

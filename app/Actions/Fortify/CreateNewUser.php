@@ -4,6 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Domains\Partners\Services\MarketingAttribution;
 use App\Domains\Shared\Enums\SystemRole;
 use App\Domains\Shared\ValueObjects\WhatsAppNumber;
 use App\Models\User;
@@ -17,6 +18,8 @@ use Spatie\Permission\Models\Role;
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
+
+    public function __construct(private MarketingAttribution $marketing) {}
 
     /**
      * Validate and create a newly registered user.
@@ -43,6 +46,7 @@ class CreateNewUser implements CreatesNewUsers
                 'password' => $input['password'],
             ]);
             $user->assignRole(Role::findOrCreate(SystemRole::Customer->value, 'web'));
+            $this->marketing->registered($user);
             DB::table('audit_logs')->insert([
                 'actor_id' => null, 'action' => 'customer_registered', 'subject_type' => 'users', 'subject_id' => $user->id,
                 'before_json' => null, 'after_json' => json_encode(['roles' => [SystemRole::Customer->value]], JSON_THROW_ON_ERROR),

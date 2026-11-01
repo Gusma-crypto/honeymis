@@ -365,7 +365,10 @@ export default function OrderDetail({
                         </form>
                     )}
                 </section>
-                <section className="flex flex-col gap-4">
+                <section
+                    id="pengiriman"
+                    className="flex scroll-mt-24 flex-col gap-4"
+                >
                     <Errors errors={operation.errors} />
                     <div className="flex flex-wrap gap-3">
                         {can.cancel && order.status === 'pending_payment' && (
