@@ -26,7 +26,7 @@ class DeployScriptTest extends TestCase
             $this->assertNotEmpty($databasePassword[1]);
             $this->assertNotSame($databasePassword[1], $rootPassword[1]);
             $calls = file_get_contents($directory.'/docker.calls');
-            $this->assertMatchesRegularExpression('/build app web.*up -d --wait.*mysql redis.*stop web worker scheduler app.*up -d --no-build.*--wait.*app web worker scheduler/s', $calls);
+            $this->assertMatchesRegularExpression('/build app web.*stop web worker scheduler app.*up -d --wait.*mysql redis.*up -d --no-build.*--wait.*app web worker scheduler/s', $calls);
             $this->assertStringContainsString('honey:reconcile-finance', $calls);
             $this->assertStringContainsString('http://127.0.0.1/up', $calls);
             preg_match('/^DEMO_PASSWORD=(.+)$/m', $environment, $password);
@@ -89,6 +89,20 @@ class DeployScriptTest extends TestCase
         });
     }
 
+    public function test_database_startup_failure_reports_logs_without_starting_migrations(): void
+    {
+        $this->withDeploymentDirectory(function (string $directory, string $shell): void {
+            $process = $this->deploy($directory, $shell, environment: ['DEPLOY_TEST_FAIL_DATABASE' => 'true']);
+
+            $this->assertSame(1, $process->getExitCode(), $process->getErrorOutput());
+            $calls = file_get_contents($directory.'/docker.calls');
+            $this->assertStringContainsString('logs --tail=100 mysql redis', $calls);
+            $this->assertStringNotContainsString('up -d --no-build', $calls);
+            $this->assertStringContainsString('log-bin-trust-function-creators=1', $process->getErrorOutput());
+            $this->assertStringNotContainsString('Deploy demo selesai', $process->getOutput());
+        });
+    }
+
     public function test_update_pulls_only_fast_forward_changes_before_building(): void
     {
         $this->withDeploymentDirectory(function (string $directory, string $shell): void {
@@ -131,6 +145,7 @@ class DeployScriptTest extends TestCase
 printf '%s\n' "$*" >> docker.calls
 case "$*" in
     *' build app web') [ "${DEPLOY_TEST_FAIL_BUILD:-false}" != true ] || exit 1 ;;
+    *' up -d --wait '*) [ "${DEPLOY_TEST_FAIL_DATABASE:-false}" != true ] || exit 1 ;;
     *' up -d --no-build '*) [ "${DEPLOY_TEST_FAIL_START:-false}" != true ] || exit 1 ;;
 esac
 exit 0

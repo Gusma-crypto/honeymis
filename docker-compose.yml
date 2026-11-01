@@ -103,6 +103,8 @@ services:
 
     mysql:
         image: mysql:8.4
+        command:
+            - --log-bin-trust-function-creators=1
         environment:
             MYSQL_DATABASE: ${DB_DATABASE:-honeycommerce}
             MYSQL_USER: ${DB_USERNAME:-honeycommerce}
@@ -113,7 +115,12 @@ services:
         healthcheck:
             test:
                 - CMD-SHELL
-                - mysqladmin ping --host=127.0.0.1 --user=root --password="$${MYSQL_ROOT_PASSWORD}" --silent
+                - >-
+                  MYSQL_PWD="$${MYSQL_PASSWORD}" mysql
+                  --host=127.0.0.1 --user="$${MYSQL_USER}"
+                  --database="$${MYSQL_DATABASE}" --batch --skip-column-names
+                  --execute="SELECT @@GLOBAL.log_bin_trust_function_creators"
+                  | grep -qx 1
             interval: 10s
             timeout: 5s
             retries: 12

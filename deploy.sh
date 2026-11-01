@@ -135,11 +135,14 @@ compose config --quiet
 printf '\nMembangun backend dan frontend dari kode terbaru...\n'
 compose build app web
 
-printf '\nMenyiapkan MySQL dan Redis...\n'
-compose up -d --wait --wait-timeout 180 mysql redis
-
-printf '\nMenghentikan proses aplikasi lama sebelum migration...\n'
+printf '\nMenghentikan proses aplikasi lama sebelum memperbarui database...\n'
 compose stop web worker scheduler app
+
+printf '\nMenyiapkan MySQL, izin trigger, dan Redis...\n'
+if ! compose up -d --wait --wait-timeout 180 mysql redis; then
+    compose logs --tail=100 mysql redis >&2 || true
+    fail 'MySQL/Redis belum siap. Periksa log, kredensial database lama, dan command --log-bin-trust-function-creators=1 pada service mysql.'
+fi
 
 printf '\nMenjalankan migration, seed demo, dan aplikasi...\n'
 if ! compose up -d --no-build --force-recreate --wait --wait-timeout 300 app web worker scheduler; then
