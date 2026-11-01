@@ -30,8 +30,13 @@
             }
         </style>
 
+        @php($storeBranding = app(\App\Domains\Shared\Services\StoreSettings::class)->present())
+        @if ($storeBranding['favicon_url'])
+        <link rel="icon" href="{{ $storeBranding['favicon_url'] }}" sizes="any">
+        @else
         <link rel="icon" href="/favicon.ico?v=honeycommerce-1" sizes="any">
         <link rel="icon" href="/favicon.svg?v=honeycommerce-1" type="image/svg+xml">
+        @endif
         <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=honeycommerce-1">
 
         @fonts

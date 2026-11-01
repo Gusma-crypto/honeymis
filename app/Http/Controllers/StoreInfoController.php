@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domains\Orders\Models\ShippingSetting;
 use App\Domains\Orders\Services\ShippingSettings;
+use App\Domains\Shared\Services\StoreSettings;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,14 +22,27 @@ class StoreInfoController extends Controller
             'returns' => ['Retur dan refund', 'Ajukan refund per item atau ongkir melalui halaman pesanan dengan alasan. Pengelola meninjau permintaan dan mengembalikan dana secara manual. Refund mengurangi komisi terkait; jika sudah dibayar, penyesuaian menjadi piutang terhadap penghasilan berikutnya. Masa tunggu pencairan komisi saat ini '.config('partners.return_window_days').' hari setelah pesanan diterima. Syarat kelayakan retur final harus dikonfirmasi pengelola.'],
         ];
         abort_unless(isset($content[$page]), 404);
+        $profile = app(StoreSettings::class)->current();
+        if ($page === 'about') {
+            $content[$page] = ['Tentang '.$profile['brand_name'], $profile['description'] ?: $content[$page][1]];
+        }
+        if ($page === 'contact') {
+            $contact = implode(' · ', array_filter([$profile['email'], $profile['phone'], $profile['address']]));
+            $content[$page][1] = $contact ?: $content[$page][1];
+        }
 
         return Inertia::render('shop/info', ['title' => $content[$page][0], 'body' => $content[$page][1]]);
     }
 
-    public function settings(ShippingSettings $shipping): Response
+    public function settings(ShippingSettings $shipping, StoreSettings $store): Response
     {
         abort_unless(Gate::allows('catalog.manage') || Gate::allows('commission-rules.manage'), 403);
 
-        return Inertia::render('admin/commerce-settings', ['shippingSettings' => $shipping->present(), 'canManageShipping' => Gate::allows('manage', ShippingSetting::class), 'settings' => ['Mata uang' => 'IDR (integer)', 'Pembayaran' => 'Transfer manual', 'Tarif ongkir manual IDR' => $shipping->current()->manual_amount, 'Masa retur komisi (hari)' => config('partners.return_window_days'), 'Minimum payout IDR' => config('partners.minimum_payout_idr'), 'Budget komisi bps' => config('partners.commission_budget_bps'), 'TTL referral (hari)' => config('partners.referral_days'), 'Instruksi pembayaran' => config('commerce.manual_payment_instructions'), 'Kontak' => config('commerce.contact') ?: 'Belum diatur']]);
+        return Inertia::render('admin/commerce-settings', [
+            'storeSettings' => $store->present(), 'canManageStore' => Gate::allows('users.manage-access'),
+            'runtime' => ['mail' => config('mail.default'), 'queue' => config('queue.default'), 'cache' => config('cache.default'), 'environment' => app()->environment()],
+            'shippingSettings' => $shipping->present(), 'canManageShipping' => Gate::allows('manage', ShippingSetting::class),
+            'settings' => ['Mata uang' => 'IDR (Rupiah)', 'Zona waktu bisnis' => 'Asia/Jakarta', 'Pembayaran' => 'Transfer manual', 'Masa retur komisi (hari)' => config('partners.return_window_days'), 'Minimum payout IDR' => config('partners.minimum_payout_idr'), 'Budget komisi bps' => config('partners.commission_budget_bps'), 'TTL referral (hari)' => config('partners.referral_days')],
+        ]);
     }
 }

@@ -101,7 +101,7 @@ function ShopIconLink({
     );
 }
 export function ShopHeader() {
-    const { auth } = usePage().props;
+    const { auth, branding } = usePage().props;
     return (
         <header className="border-b border-emerald-200/60 bg-card dark:border-emerald-900/60">
             <nav
@@ -113,9 +113,17 @@ export function ShopHeader() {
                     className="group flex items-center gap-2.5 text-lg font-bold tracking-tight text-primary sm:text-xl"
                 >
                     <span className="flex size-10 items-center justify-center rounded-xl bg-accent/60">
-                        <AppLogoIcon className="size-7" />
+                        {branding?.logo_url ? (
+                            <img
+                                src={branding.logo_url}
+                                alt=""
+                                className="size-9 object-contain"
+                            />
+                        ) : (
+                            <AppLogoIcon className="size-7" />
+                        )}
                     </span>
-                    HoneyCommerce
+                    {branding?.brand_name || 'HoneyCommerce'}
                 </Link>
                 <div className="flex flex-wrap items-center gap-2 text-sm sm:gap-3">
                     <Link

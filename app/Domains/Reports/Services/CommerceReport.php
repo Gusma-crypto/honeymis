@@ -27,7 +27,8 @@ class CommerceReport
         Gate::forUser($user)->authorize('reports.view');
         $range = $this->range($from, $until);
         $orders = Order::where('placed_at', '>=', $range['from'])->where('placed_at', '<', $range['until']);
-        $paid = (clone $orders)->whereHas('payments', fn ($query) => $query->whereIn('status', ['verified', 'refunded']));
+        $paid = (clone $orders)->where('fraud_hold', false)->whereIn('status', ['paid', 'processing', 'shipped', 'delivered', 'completed', 'refunded'])
+            ->whereHas('payments', fn ($query) => $query->whereIn('status', ['verified', 'refunded'])->whereNotNull('verified_at'));
         $ids = (clone $paid)->select('id');
         $refunds = (int) Refund::whereIn('order_id', $ids)->where('status', 'processed')->sum('amount');
         $gross = (int) (clone $paid)->sum('grand_total');

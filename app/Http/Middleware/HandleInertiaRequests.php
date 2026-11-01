@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Domains\Shared\Services\StoreSettings;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -38,6 +39,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'branding' => fn (): array => collect(app(StoreSettings::class)->present())->only(['brand_name', 'slogan', 'logo_url', 'favicon_url'])->all(),
             'auth' => [
                 'user' => $request->user(),
                 'permissions' => fn (): array => $request->user()?->getAllPermissions()->pluck('name')->values()->all() ?? [],

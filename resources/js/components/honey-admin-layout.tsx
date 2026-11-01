@@ -1,5 +1,5 @@
 import { MemberAvatar } from '@/components/member-avatar';
-import { Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import {
@@ -81,10 +81,19 @@ export function HoneyAdminLayout({
 }>) {
     const page = usePage();
     const { auth } = page.props;
+    const branding = page.props.branding as
+        | {
+              brand_name: string;
+              slogan: string;
+              logo_url: string | null;
+              favicon_url: string | null;
+          }
+        | undefined;
     const admin = page.props.admin as AdminOverview | undefined;
     const isDashboard = page.component === 'dashboard';
     const isCatalog = page.component === 'admin/catalog';
     const isOrders = page.component === 'admin/orders';
+    const isReports = page.component === 'admin/reports';
     const { isCurrentOrParentUrl } = useCurrentUrl();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [desktopCollapsed, setDesktopCollapsed] = useState(false);
@@ -299,14 +308,35 @@ export function HoneyAdminLayout({
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
+            {branding?.favicon_url && (
+                <Head>
+                    <link
+                        head-key="store-favicon"
+                        rel="icon"
+                        href={branding.favicon_url}
+                    />
+                </Head>
+            )}
             <aside className={`honey-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
                 <Link href={dashboard()} className="honey-brand">
-                    <span className="honey-emblem">
-                        <Droplet size={30} fill="#ffac13" />
-                    </span>
+                    {branding?.logo_url ? (
+                        <img
+                            src={branding.logo_url}
+                            alt={branding.brand_name}
+                            className="size-11 rounded-lg object-contain"
+                        />
+                    ) : (
+                        <span className="honey-emblem">
+                            <Droplet size={30} fill="#ffac13" />
+                        </span>
+                    )}
                     <span>
-                        <strong>HoneyCommerce</strong>
-                        <small>Madu Sehat, Hidup Lebih Baik</small>
+                        <strong>
+                            {branding?.brand_name || 'HoneyCommerce'}
+                        </strong>
+                        <small>
+                            {branding?.slogan || 'Madu Sehat, Hidup Lebih Baik'}
+                        </small>
                     </span>
                 </Link>
                 <nav aria-label="Navigasi admin">
@@ -349,15 +379,35 @@ export function HoneyAdminLayout({
                     <img src="/honey-hero.jpg" alt="Madu alami HoneyCommerce" />
                     <div>
                         <h3>
-                            Produk Madu
-                            <br />
-                            Berkualitas
-                            <br />
-                            Untuk Keluarga
+                            {isReports ? (
+                                <>
+                                    Analisis Bisnis
+                                    <br />
+                                    Lebih Lengkap
+                                    <br />
+                                    dengan Laporan
+                                    <br />
+                                    HoneyCommerce
+                                </>
+                            ) : (
+                                <>
+                                    Produk Madu
+                                    <br />
+                                    Berkualitas
+                                    <br />
+                                    Untuk Keluarga
+                                </>
+                            )}
                         </h3>
-                        <Link href={storefront()}>
-                            Lihat Produk <ArrowRight size={16} />
-                        </Link>
+                        {isReports ? (
+                            <a href="#reports-guide">
+                                Lihat Panduan <ArrowRight size={16} />
+                            </a>
+                        ) : (
+                            <Link href={storefront()}>
+                                Lihat Produk <ArrowRight size={16} />
+                            </Link>
+                        )}
                     </div>
                 </div>
             </aside>

@@ -6,12 +6,14 @@ use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Domains\Partners\Services\MarketingAttribution;
 use App\Domains\Shared\Enums\SystemRole;
+use App\Domains\Shared\Services\StoreSettings;
 use App\Domains\Shared\ValueObjects\WhatsAppNumber;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Spatie\Permission\Models\Role;
 
@@ -28,6 +30,9 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        if (! app(StoreSettings::class)->current()['registration_enabled']) {
+            throw ValidationException::withMessages(['email' => 'Pendaftaran member baru sedang ditutup.']);
+        }
         if (isset($input['whatsapp_number']) && is_string($input['whatsapp_number'])) {
             $input['whatsapp_number'] = WhatsAppNumber::normalize($input['whatsapp_number']) ?? $input['whatsapp_number'];
         }

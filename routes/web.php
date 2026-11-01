@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\PayoutManagementController;
 use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ShippingSettingsController;
+use App\Http\Controllers\Admin\StoreSettingsController;
 use App\Http\Controllers\Admin\UserAccessController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
@@ -45,6 +46,7 @@ Route::middleware(['auth', 'verified', 'password.confirm', 'throttle:30,1'])->pr
 Route::get('products', [CatalogController::class, 'index'])->name('catalog.index');
 Route::get('products/{product:slug}', [CatalogController::class, 'show'])->name('catalog.show');
 Route::get('product-images/{image}', [CatalogController::class, 'image'])->name('catalog.image');
+Route::get('branding/{kind}', [StoreSettingsController::class, 'show'])->name('store.branding')->whereIn('kind', ['logo', 'favicon']);
 
 Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function (): void {
     Route::get('cart', [CartController::class, 'index'])->name('cart.index');
@@ -130,6 +132,7 @@ Route::middleware(['auth', 'verified', 'password.confirm'])->prefix('admin')->na
     Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::get('settings', [StoreInfoController::class, 'settings'])->name('commerce-settings');
+    Route::post('settings', [StoreSettingsController::class, 'update'])->name('store-settings.update')->middleware('throttle:20,1');
     Route::put('shipping-settings', [ShippingSettingsController::class, 'update'])->name('shipping-settings.update')->middleware('throttle:20,1');
     Route::get('shipping-settings/destinations', [ShippingSettingsController::class, 'destinations'])->name('shipping-settings.destinations')->middleware('throttle:20,1');
 });
