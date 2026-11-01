@@ -5,6 +5,16 @@ umask 022
 
 cd /var/www/html
 
+if [ "${APP_ENV:-production}" = "production" ] && [ -z "${APP_KEY:-}" ]; then
+    echo 'APP_KEY must be configured and preserved for production.' >&2
+    exit 1
+fi
+
+if [ "${APP_SEED_DEMO:-false}" = "true" ] && [ "${APP_ENV:-production}" != "local" ]; then
+    echo 'APP_SEED_DEMO is only allowed with APP_ENV=local.' >&2
+    exit 1
+fi
+
 mkdir -p \
     storage/app/private \
     storage/app/public \
@@ -33,8 +43,11 @@ php artisan config:clear
 php artisan route:clear
 
 if [ "${APP_BOOTSTRAP:-true}" = "true" ]; then
-    php artisan migrate --force
-    php artisan db:seed --class='Database\Seeders\LocalDemoSeeder' --force
+    php artisan migrate --force --no-interaction
+
+    if [ "${APP_SEED_DEMO:-false}" = "true" ]; then
+        php artisan db:seed --class='Database\Seeders\LocalDemoSeeder' --force --no-interaction
+    fi
 fi
 
 php artisan config:cache

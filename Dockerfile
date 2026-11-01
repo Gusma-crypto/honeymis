@@ -34,7 +34,13 @@ WORKDIR /var/www/html
 
 COPY . .
 
-RUN composer install \
+RUN mkdir -p \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
+    && composer install \
         --no-dev \
         --no-interaction \
         --prefer-dist \
@@ -43,7 +49,8 @@ RUN composer install \
     && export APP_KEY="$(php -r 'echo "base64:".base64_encode(random_bytes(32));')" \
     && php artisan wayfinder:generate --with-form --no-interaction \
     && npm run build \
-    && rm -rf node_modules
+    && rm -rf node_modules \
+    && rm -f bootstrap/cache/*.php
 
 FROM php-base AS app
 
@@ -53,7 +60,8 @@ COPY --from=build --chown=www-data:www-data /var/www/html /var/www/html
 COPY docker/php/zz-app.ini /usr/local/etc/php/conf.d/zz-app.ini
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/docker-entrypoint
 
-RUN mkdir -p \
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint \
+    && mkdir -p \
         storage/app/private \
         storage/app/public \
         storage/framework/cache/data \

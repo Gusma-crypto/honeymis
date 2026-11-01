@@ -14,4 +14,8 @@ tests
 docs
 .claude
 .github
+.agents
+.codex
+.aws
+.ai
 .phpunit.result.cache

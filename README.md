@@ -45,3 +45,50 @@ php C:/composer/composer.phar run production:prepare
 ```
 
 Panduan operasional: [deployment-runbook.md](docs/honeycommerce/deployment-runbook.md).
+
+## Deploy Docker di Ubuntu
+
+Gunakan Docker Engine dan Docker Compose plugin (`docker compose`) yang sudah terpasang pada server Ubuntu. Jalankan dari direktori proyek. PHP, Composer, Node, MySQL, dan Redis dijalankan di Docker; tidak perlu dipasang di host.
+
+```bash
+cp .env.docker.production.example .env.docker
+chmod 600 .env.docker
+nano .env.docker
+```
+
+Isi `DB_PASSWORD` dan `MYSQL_ROOT_PASSWORD` dengan password berbeda yang kuat, serta `APP_URL` dengan alamat server/domain. Untuk nilai yang mengandung `$` atau `#`, gunakan petik tunggal. Pada instalasi baru, buat `APP_KEY` sekali:
+
+```bash
+docker run --rm php:8.4-cli php -r 'echo "base64:".base64_encode(random_bytes(32)).PHP_EOL;'
+```
+
+Salin hasilnya ke `APP_KEY`. Untuk memindahkan instalasi lama, gunakan `APP_KEY` lama dan pulihkan database serta storage dari backup; jangan membuat kunci pengganti. Simpan kunci di backup terpisah.
+
+```bash
+docker compose --env-file .env.docker config --quiet
+docker compose --env-file .env.docker up -d --build
+docker compose --env-file .env.docker ps
+docker compose --env-file .env.docker logs --tail=100 app web worker scheduler
+curl --fail http://127.0.0.1/up
+```
+
+Startup app menjalankan migration sebelum worker/scheduler mulai. Produksi tidak membuat akun atau transaksi demo. Untuk instalasi baru, inisialisasi role/permission secara eksplisit:
+
+```bash
+docker compose --env-file .env.docker exec app php artisan db:seed --class=RolePermissionSeeder --force --no-interaction
+```
+
+Akun administrator produksi harus diprovisikan melalui prosedur operator yang berwenang; `honey:bootstrap-admin` hanya tersedia di environment non-produksi. Konfigurasi ini tidak otomatis mempromosikan akun pengguna.
+
+Contoh produksi membuka HTTP port 80. Sebelum login publik/transaksi riil, siapkan HTTPS pada reverse proxy, ubah `APP_URL` menjadi domain HTTPS dan `SESSION_SECURE_COOKIE=true`. Jika reverse proxy berjalan pada host yang sama, gunakan `DOCKER_HTTP_BIND=127.0.0.1` dan `DOCKER_HTTP_PORT=8000`; teruskan Host asli dan tangani terminasi HTTPS/proxy tepercaya sesuai topologi server. TLS belum disediakan oleh Compose ini. Isi konfigurasi SMTP dan kontak/instruksi pembayaran yang benar sebelum dipakai operasional.
+
+Database, Redis, serta storage disimpan pada named volume. Untuk pembaruan, backup database, storage, dan kunci terlebih dahulu, lalu jalankan:
+
+```bash
+docker compose --env-file .env.docker build
+docker compose --env-file .env.docker up -d --force-recreate
+docker compose --env-file .env.docker ps
+curl --fail http://127.0.0.1/up
+```
+
+Pembaruan ini memerlukan jendela maintenance; bukan deployment tanpa downtime. Jangan gunakan `down -v` pada server berisi data. Jangan menjalankan scheduler tambahan di cron host karena service `scheduler` sudah berjalan. Password MySQL pada environment hanya berlaku saat volume database pertama dibuat; perubahan password pada database lama perlu dilakukan secara terpisah dan diselaraskan dengan environment.
